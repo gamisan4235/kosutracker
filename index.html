@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工数管理 / 日報</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root {
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+    --accent:#4f7cff; --accent2:#00d4aa; --text:#e8eaf0; --text2:#8b90a8;
+    --danger:#ff5f7e; --warn:#ffb347; --notion:#ffffff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Noto Sans JP',sans-serif; min-height:100vh; padding:24px; }
+
+  .header { display:flex; align-items:baseline; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
+  .header h1 { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
+  .date-badge { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent2); background:rgba(0,212,170,0.1); padding:3px 10px; border-radius:4px; border:1px solid rgba(0,212,170,0.25); }
+
+  .layout { display:grid; grid-template-columns:1fr 360px; gap:20px; max-width:1100px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .card-title { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text2); margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
+
+  .form-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  label { font-size:11px; color:var(--text2); font-weight:500; letter-spacing:0.5px; }
+
+  input, select, textarea {
+    background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'Noto Sans JP',sans-serif; font-size:14px;
+    padding:9px 12px; outline:none; transition:border-color 0.2s; width:100%;
+  }
+  input[type="time"] { font-family:'JetBrains Mono',monospace; font-size:15px; }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); background:#1e2236; }
+  select option { background:var(--surface2); }
+  textarea { resize:vertical; min-height:70px; line-height:1.6; }
+
+  .duration-badge { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--accent2); background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.2); border-radius:8px; padding:8px 14px; }
+  .duration-badge span { font-size:11px; color:var(--text2); font-family:'Noto Sans JP',sans-serif; }
+
+  .btn { border:none; border-radius:8px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:14px; font-weight:700; padding:11px 20px; transition:all 0.2s; }
+  .btn-primary { background:var(--accent); color:#fff; width:100%; margin-top:12px; }
+  .btn-primary:hover { background:#6b8fff; transform:translateY(-1px); }
+  .btn-sm { font-size:12px; padding:5px 12px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+  .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
+
+  .log-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:12px; }
+  .log-table th { text-align:left; padding:8px 10px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text2); border-bottom:1px solid var(--border); }
+  .log-table td { padding:10px; border-bottom:1px solid rgba(46,51,80,0.5); vertical-align:top; }
+  .log-table tr:last-child td { border-bottom:none; }
+  .log-table tr:hover td { background:rgba(79,124,255,0.04); }
+
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .time-cell { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text2); white-space:nowrap; }
+  .dur-cell { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--accent2); white-space:nowrap; }
+  .content-cell { color:var(--text); line-height:1.5; max-width:260px; }
+  .del-btn { background:none; border:none; color:var(--text2); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; transition:all 0.15s; }
+  .del-btn:hover { color:var(--danger); background:rgba(255,95,126,0.1); }
+
+  .sidebar { display:flex; flex-direction:column; gap:16px; }
+  .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
+  .stat-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+  .stat-box .stat-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:4px; }
+  .stat-box .stat-value { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; color:var(--accent); }
+  .stat-box .stat-value.green { color:var(--accent2); }
+
+  .cat-list { display:flex; flex-direction:column; gap:8px; }
+  .cat-item { display:flex; align-items:center; gap:10px; }
+  .cat-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .cat-bar { height:100%; border-radius:3px; transition:width 0.4s ease; }
+  .cat-name { font-size:12px; min-width:70px; color:var(--text2); }
+  .cat-time { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text2); min-width:36px; text-align:right; }
+
+  .report-area { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.8; white-space:pre-wrap; min-height:120px; color:var(--text); font-family:'Noto Sans JP',sans-serif; }
+  .empty-state { color:var(--text2); font-size:12px; text-align:center; padding:20px; }
+
+  .btn-copy { background:rgba(0,212,170,0.12); color:var(--accent2); border:1px solid rgba(0,212,170,0.3); border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; }
+  .btn-copy:hover { background:rgba(0,212,170,0.2); }
+
+  /* ===== Notion設定パネル ===== */
+  .notion-panel { margin-top:0; }
+  .notion-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text2); user-select:none; padding:6px 0; }
+  .notion-toggle:hover { color:var(--text); }
+  .notion-icon { width:18px; height:18px; background:#fff; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .notion-icon svg { width:12px; height:12px; }
+  .notion-body { display:none; margin-top:12px; }
+  .notion-body.open { display:block; }
+  .notion-status { font-size:12px; padding:8px 12px; border-radius:6px; margin-top:10px; display:none; }
+  .notion-status.ok { background:rgba(0,212,170,0.1); color:var(--accent2); border:1px solid rgba(0,212,170,0.25); display:block; }
+  .notion-status.err { background:rgba(255,95,126,0.1); color:var(--danger); border:1px solid rgba(255,95,126,0.25); display:block; }
+  .notion-status.loading { background:rgba(79,124,255,0.1); color:var(--accent); border:1px solid rgba(79,124,255,0.25); display:block; }
+
+  .btn-notion { background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn-notion:hover { background:rgba(255,255,255,0.18); }
+  .btn-notion:disabled { opacity:0.4; cursor:not-allowed; }
+
+  .notion-log-status { font-size:11px; margin-left:6px; }
+  .sent { color:var(--accent2); }
+  .unsent { color:var(--text2); }
+
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--accent2); color:#0f1117; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:700; opacity:0; transform:translateY(10px); transition:all 0.3s; pointer-events:none; z-index:100; }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .toast.error { background:var(--danger); color:#fff; }
+
+  .help-text { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
+  .divider { border:none; border-top:1px solid var(--border); margin:12px 0; }
+
+  .c0{background:#4f7cff} .c0t{color:#4f7cff;background:rgba(79,124,255,0.12)}
+  .c1{background:#00d4aa} .c1t{color:#00d4aa;background:rgba(0,212,170,0.12)}
+  .c2{background:#ffb347} .c2t{color:#ffb347;background:rgba(255,179,71,0.12)}
+  .c3{background:#ff5f7e} .c3t{color:#ff5f7e;background:rgba(255,95,126,0.12)}
+  .c4{background:#a78bfa} .c4t{color:#a78bfa;background:rgba(167,139,250,0.12)}
+  .c5{background:#38bdf8} .c5t{color:#38bdf8;background:rgba(56,189,248,0.12)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>工数管理</h1>
+  <div class="date-badge" id="todayLabel"></div>
+</div>
+
+<div class="layout">
+  <!-- 左：入力 + ログ -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">新規記録</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>大項目</label>
+          <select id="category">
+            <option value="">選択してください</option>
+            <option>営業・商談</option>
+            <option>開発・実装</option>
+            <option>会議・MTG</option>
+            <option>資料作成</option>
+            <option>メール・連絡</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>開始時間</label>
+          <input type="time" id="startTime" step="1800">
+        </div>
+        <div class="form-group">
+          <label>終了時間</label>
+          <input type="time" id="endTime" step="1800">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="duration-badge" id="durationDisplay">--.-<span>h</span></div>
+        <button class="btn btn-sm" onclick="setNow('startTime')">開始=今</button>
+        <button class="btn btn-sm" onclick="setNow('endTime')">終了=今</button>
+      </div>
+      <div class="form-group">
+        <label>作業内容</label>
+        <textarea id="content" placeholder="作業の内容を入力してください…"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="addLog()">＋ 記録を追加</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>本日のログ</span>
+        <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()" style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
+          <span id="notionBtnIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v16H4V4z" fill="white" rx="2"/><path d="M9 8l6 4-6 4V8z" fill="#0f1117"/></svg>
+          </span>
+          Notionへ一括送信
+        </button>
+      </div>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>大項目</th><th>時間</th><th>工数</th><th>内容</th><th>Notion</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <tr><td colspan="6"><div class="empty-state">記録がありません</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 右：サマリー + Notion設定 + 日報 -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">サマリー</div>
+      <div class="summary-grid">
+        <div class="stat-box">
+          <div class="stat-label">総工数</div>
+          <div class="stat-value" id="totalHours">0.0<span style="font-size:13px;color:var(--text2)">h</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">件数</div>
+          <div class="stat-value green" id="totalCount">0<span style="font-size:13px;color:var(--text2)">件</span></div>
+        </div>
+      </div>
+      <div class="cat-list" id="catSummary"></div>
+    </div>
+
+    <!-- Notion設定 -->
+    <div class="card notion-panel">
+      <div class="card-title">
+        <div class="notion-toggle" onclick="toggleNotion()">
+          <span class="notion-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="24" height="24" rx="3" fill="black"/>
+              <path d="M6 6h12v2H6zm0 4h8v2H6zm0 4h10v2H6z" fill="white"/>
+            </svg>
+          </span>
+          <span id="notionToggleLabel">Notion連携設定</span>
+          <span id="notionToggleArrow" style="margin-left:auto;font-size:10px;">▼</span>
+        </div>
+        <span id="notionConnectedBadge" style="display:none;font-size:10px;background:rgba(0,212,170,0.15);color:var(--accent2);padding:2px 8px;border-radius:4px;border:1px solid rgba(0,212,170,0.3);">接続済</span>
+      </div>
+
+      <div class="notion-body" id="notionBody">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Integration Token（Internal Integration Secret）</label>
+          <input type="password" id="notionToken" placeholder="secret_xxxxxxxxxxxx" oninput="saveSettings()">
+          <div class="help-text">Notion → 設定 → コネクト → 新しいインテグレーション で取得</div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>工数ログDB の Database ID</label>
+          <input type="text" id="notionDbId" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveSettings()">
+          <div class="help-text">DBページURL: notion.so/xxxxx?v=... の xxxxx 部分（32文字）</div>
+        </div>
+        <button class="btn-notion" onclick="testConnection()">接続テスト</button>
+        <div class="notion-status" id="notionStatus"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">日報プレビュー（kintone用）</div>
+      <div class="report-area" id="reportArea"><span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span></div>
+      <button class="btn-copy" onclick="copyReport()">📋 日報をコピー</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const logs = [];
+const CATS = ['営業・商談','開発・実装','会議・MTG','資料作成','メール・連絡','その他'];
+const COLORS = ['c0','c1','c2','c3','c4','c5'];
+const today = new Date();
+
+document.getElementById('todayLabel').textContent =
+  today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+
+// 設定の読み込み・保存
+function loadSettings() {
+  const token = localStorage.getItem('notion_token') || '';
+  const dbId  = localStorage.getItem('notion_db_id') || '';
+  document.getElementById('notionToken').value = token;
+  document.getElementById('notionDbId').value  = dbId;
+  if (token && dbId) {
+    document.getElementById('notionConnectedBadge').style.display = 'inline';
+    document.getElementById('btnSendAll').disabled = false;
+  }
+}
+function saveSettings() {
+  const token = document.getElementById('notionToken').value.trim();
+  const dbId  = document.getElementById('notionDbId').value.trim();
+  localStorage.setItem('notion_token', token);
+  localStorage.setItem('notion_db_id', dbId);
+  const ok = token && dbId;
+  document.getElementById('notionConnectedBadge').style.display = ok ? 'inline' : 'none';
+  document.getElementById('btnSendAll').disabled = !ok || logs.length === 0;
+}
+
+function toggleNotion() {
+  const body  = document.getElementById('notionBody');
+  const arrow = document.getElementById('notionToggleArrow');
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▲' : '▼';
+}
+
+// 接続テスト
+async function testConnection() {
+  const token = document.getElementById('notionToken').value.trim();
+  const dbId  = document.getElementById('notionDbId').value.trim();
+  const st    = document.getElementById('notionStatus');
+  if (!token || !dbId) { showStatus('err','Token と Database ID を入力してください'); return; }
+  showStatus('loading','接続確認中...');
+  try {
+    const res = await fetch(`https://api.notion.com/v1/databases/${dbId.replace(/-/g,'')}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Notion-Version': '2022-06-28'
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const title = data.title?.[0]?.plain_text || 'データベース';
+      showStatus('ok', `✓ 接続成功：「${title}」に接続しました`);
+      document.getElementById('notionConnectedBadge').style.display = 'inline';
+      document.getElementById('btnSendAll').disabled = logs.length === 0;
+    } else {
+      const err = await res.json();
+      showStatus('err', `エラー (${res.status})：${err.message || '接続に失敗しました'}`);
+    }
+  } catch(e) {
+    showStatus('err','通信エラー：' + e.message);
+  }
+}
+function showStatus(type, msg) {
+  const el = document.getElementById('notionStatus');
+  el.className = 'notion-status ' + type;
+  el.textContent = msg;
+}
+
+// ========== 工数ログ ==========
+function colorIdx(cat) { const i = CATS.indexOf(cat); return i >= 0 ? i : 5; }
+
+function setNow(id) {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2,'0');
+  const mm  = now.getMinutes() < 30 ? '00' : '30';
+  document.getElementById(id).value = hh + ':' + mm;
+  calcDuration();
+}
+
+function timeToMin(t) {
+  if (!t) return null;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+
+function calcDuration() {
+  const s = timeToMin(document.getElementById('startTime').value);
+  const e = timeToMin(document.getElementById('endTime').value);
+  if (s !== null && e !== null && e > s) {
+    document.getElementById('durationDisplay').innerHTML = ((e-s)/60).toFixed(1)+'<span>h</span>';
+  } else {
+    document.getElementById('durationDisplay').innerHTML = '--.-<span>h</span>';
+  }
+}
+document.getElementById('startTime').addEventListener('change', calcDuration);
+document.getElementById('endTime').addEventListener('change', calcDuration);
+
+function addLog() {
+  const cat     = document.getElementById('category').value;
+  const start   = document.getElementById('startTime').value;
+  const end     = document.getElementById('endTime').value;
+  const content = document.getElementById('content').value.trim();
+  if (!cat||!start||!end||!content) { alert('すべての項目を入力してください'); return; }
+  const s = timeToMin(start), e = timeToMin(end);
+  if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
+  logs.push({ cat, start, end, content, dur:(e-s)/60, notionSent:false, notionId:null });
+  logs.sort((a,b)=>a.start.localeCompare(b.start));
+  document.getElementById('category').value    = '';
+  document.getElementById('startTime').value   = end;
+  document.getElementById('endTime').value     = '';
+  document.getElementById('content').value     = '';
+  calcDuration();
+  render();
+  // 設定済みなら送信ボタン有効化
+  const token = localStorage.getItem('notion_token');
+  const dbId  = localStorage.getItem('notion_db_id');
+  if (token && dbId) document.getElementById('btnSendAll').disabled = false;
+}
+
+function deleteLog(i) {
+  logs.splice(i,1);
+  render();
+  if (logs.length === 0) document.getElementById('btnSendAll').disabled = true;
+}
+
+function render() {
+  const tbody = document.getElementById('logBody');
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">記録がありません</div></td></tr>';
+  } else {
+    tbody.innerHTML = logs.map((l,i) => {
+      const ci = colorIdx(l.cat);
+      const sentMark = l.notionSent
+        ? `<span class="notion-log-status sent" title="Notion送信済">✓</span>`
+        : `<span class="notion-log-status unsent" title="未送信">−</span>`;
+      return `<tr>
+        <td><span class="tag ${COLORS[ci]}t">${l.cat}</span></td>
+        <td class="time-cell">${l.start}〜${l.end}</td>
+        <td class="dur-cell">${l.dur.toFixed(1)}h</td>
+        <td class="content-cell">${l.content.replace(/\n/g,'<br>')}</td>
+        <td style="text-align:center">${sentMark}</td>
+        <td><button class="del-btn" onclick="deleteLog(${i})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  const total = logs.reduce((s,l)=>s+l.dur,0);
+  document.getElementById('totalHours').innerHTML = total.toFixed(1)+'<span style="font-size:13px;color:var(--text2)">h</span>';
+  document.getElementById('totalCount').innerHTML = logs.length+'<span style="font-size:13px;color:var(--text2)">件</span>';
+
+  const catMap = {};
+  logs.forEach(l=>{ catMap[l.cat]=(catMap[l.cat]||0)+l.dur; });
+  document.getElementById('catSummary').innerHTML = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([cat,h])=>{
+    const ci  = colorIdx(cat);
+    const pct = total > 0 ? (h/total*100).toFixed(0) : 0;
+    return `<div class="cat-item"><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar ${COLORS[ci]}" style="width:${pct}%"></div></div><span class="cat-time">${h.toFixed(1)}h</span></div>`;
+  }).join('');
+
+  generateReport(total);
+}
+
+function generateReport(total) {
+  if (logs.length === 0) {
+    document.getElementById('reportArea').innerHTML = '<span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span>';
+    return;
+  }
+  const dateStr = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  const catMap = {};
+  logs.forEach(l=>{ if(!catMap[l.cat]) catMap[l.cat]=[]; catMap[l.cat].push(l); });
+  let r = `【日報】${dateStr}\n━━━━━━━━━━━━━━━━━━\n■ 総工数：${total.toFixed(1)}h（${logs.length}件）\n\n■ 作業内容\n`;
+  logs.forEach(l=>{ r+=`\n[${l.start}〜${l.end}]（${l.dur.toFixed(1)}h）${l.cat}\n  ${l.content}\n`; });
+  r+=`\n━━━━━━━━━━━━━━━━━━\n■ カテゴリ別集計\n`;
+  Object.entries(catMap).sort((a,b)=>b[1].reduce((s,l)=>s+l.dur,0)-a[1].reduce((s,l)=>s+l.dur,0))
+    .forEach(([cat,ls])=>{ r+=`  ${cat}：${ls.reduce((s,l)=>s+l.dur,0).toFixed(1)}h\n`; });
+  document.getElementById('reportArea').textContent = r;
+}
+
+function copyReport() {
+  const text = document.getElementById('reportArea').textContent;
+  if (!text||text.includes('記録を追加')) return;
+  navigator.clipboard.writeText(text).then(()=>showToast('コピーしました！'));
+}
+
+// ========== Notion送信 ==========
+function buildNotionPayload(log, dbId) {
+  // 日付をISO形式に変換
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  const dateISO = `${y}-${m}-${d}`;
+
+  return {
+    parent: { database_id: dbId.replace(/-/g,'').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/,'$1-$2-$3-$4-$5') },
+    properties: {
+      "日付": {
+        date: { start: dateISO }
+      },
+      "大項目": {
+        select: { name: log.cat }
+      },
+      "開始時間": {
+        rich_text: [{ text: { content: log.start } }]
+      },
+      "終了時間": {
+        rich_text: [{ text: { content: log.end } }]
+      },
+      "工数(h)": {
+        number: log.dur
+      },
+      "作業内容": {
+        title: [{ text: { content: log.content } }]
+      }
+    }
+  };
+}
+
+async function sendOneToNotion(log, token, dbId) {
+  const payload = buildNotionPayload(log, dbId);
+  const res = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`${res.status}: ${err.message}`);
+  }
+  const data = await res.json();
+  return data.id;
+}
+
+async function sendAllToNotion() {
+  const token = localStorage.getItem('notion_token');
+  const dbId  = localStorage.getItem('notion_db_id');
+  if (!token||!dbId) { showToast('先にNotion設定を行ってください', true); return; }
+
+  const unsent = logs.filter(l=>!l.notionSent);
+  if (unsent.length === 0) { showToast('すべて送信済みです'); return; }
+
+  const btn = document.getElementById('btnSendAll');
+  btn.disabled = true;
+  btn.innerHTML = '<span>送信中...</span>';
+
+  let ok = 0, ng = 0;
+  for (const log of unsent) {
+    try {
+      const id = await sendOneToNotion(log, token, dbId);
+      log.notionSent = true;
+      log.notionId   = id;
+      ok++;
+      render();
+    } catch(e) {
+      ng++;
+      console.error('Notion送信エラー:', e);
+    }
+  }
+
+  btn.innerHTML = `<span>Notionへ一括送信</span>`;
+  btn.disabled  = logs.every(l=>l.notionSent);
+
+  if (ng === 0) {
+    showToast(`✓ ${ok}件をNotionに送信しました`);
+  } else {
+    showToast(`${ok}件送信、${ng}件失敗しました`, true);
+  }
+}
+
+// ========== ユーティリティ ==========
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast show' + (isError ? ' error' : '');
+  setTimeout(()=>{ t.className='toast'; }, 3000);
+}
+
+// 初期化
+loadSettings();
+</script>
+</body>
+</html>
