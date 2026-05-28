@@ -443,7 +443,7 @@ function buildNotionPayload(log, dbId) {
         date: { start: dateISO }
       },
       "大項目": {
-        select: { name: log.cat }
+        title: [{ text: { content: log.cat } }]
       },
       "開始時間": {
         rich_text: [{ text: { content: log.start } }]
@@ -455,7 +455,7 @@ function buildNotionPayload(log, dbId) {
         number: log.dur
       },
       "作業内容": {
-        title: [{ text: { content: log.content } }]
+        rich_text: [{ text: { content: log.content } }]
       }
     }
   };
