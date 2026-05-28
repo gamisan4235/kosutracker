@@ -244,7 +244,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const logs = [];
+const logs = JSON.parse(localStorage.getItem('work_logs') || '[]');
 const CATS = ['営業・商談','開発・実装','会議・MTG','資料作成','メール・連絡','その他'];
 const COLORS = ['c0','c1','c2','c3','c4','c5'];
 const today = new Date();
@@ -358,6 +358,7 @@ function addLog() {
   document.getElementById('endTime').value     = '';
   document.getElementById('content').value     = '';
   calcDuration();
+  saveLogs();
   render();
   // 設定済みなら送信ボタン有効化
   const token = localStorage.getItem('notion_token');
@@ -367,6 +368,7 @@ function addLog() {
 
 function deleteLog(i) {
   logs.splice(i,1);
+  saveLogs();
   render();
   if (logs.length === 0) document.getElementById('btnSendAll').disabled = true;
 }
@@ -517,6 +519,9 @@ async function sendAllToNotion() {
 }
 
 // ========== ユーティリティ ==========
+function saveLogs() {
+  localStorage.setItem('work_logs', JSON.stringify(logs));
+}
 function showToast(msg, isError=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -525,6 +530,13 @@ function showToast(msg, isError=false) {
 }
 
 // 初期化
+// 日付が変わったらログをリセット
+const savedDate = localStorage.getItem('work_logs_date');
+const todayStr = today.toISOString().split('T')[0];
+if (savedDate !== todayStr) {
+  localStorage.removeItem('work_logs');
+  localStorage.setItem('work_logs_date', todayStr);
+}
 loadSettings();
 </script>
 </body>
