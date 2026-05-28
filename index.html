@@ -288,7 +288,7 @@ async function testConnection() {
   if (!token || !dbId) { showStatus('err','Token と Database ID を入力してください'); return; }
   showStatus('loading','接続確認中...');
   try {
-    const res = await fetch(`https://api.notion.com/v1/databases/${dbId.replace(/-/g,'')}`, {
+    const res = await fetch(`https://notion-proxy.itjyouhou.workers.dev/v1/databases/${dbId.replace(/-/g,'')}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Notion-Version': '2022-06-28'
@@ -463,7 +463,7 @@ function buildNotionPayload(log, dbId) {
 
 async function sendOneToNotion(log, token, dbId) {
   const payload = buildNotionPayload(log, dbId);
-  const res = await fetch('https://api.notion.com/v1/pages', {
+  const res = await fetch('https://notion-proxy.itjyouhou.workers.dev/v1/pages', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
