@@ -821,6 +821,7 @@ function buildNotionPayload(log, dbId) {
     properties: {
       "日付":     { date:      { start: log.date } },
       "大項目":   { title:     [{ text: { content: log.cat } }] },
+      "会社名":   { rich_text: [{ text: { content: companyStr } }] },
       "開始時間": { rich_text: [{ text: { content: log.start } }] },
       "終了時間": { rich_text: [{ text: { content: log.end } }] },
       "工数(h)":  { number: log.dur },
