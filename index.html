@@ -3,28 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>工数管理 / 日報</title>
+<title>工数管理 / 日報 v2</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
   :root {
     --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
     --accent:#4f7cff; --accent2:#00d4aa; --text:#e8eaf0; --text2:#8b90a8;
-    --danger:#ff5f7e; --warn:#ffb347; --notion:#ffffff;
+    --danger:#ff5f7e; --warn:#ffb347;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'Noto Sans JP',sans-serif; min-height:100vh; padding:24px; }
 
+  /* Header */
   .header { display:flex; align-items:baseline; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
   .header h1 { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
   .date-badge { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent2); background:rgba(0,212,170,0.1); padding:3px 10px; border-radius:4px; border:1px solid rgba(0,212,170,0.25); }
 
-  .layout { display:grid; grid-template-columns:1fr 360px; gap:20px; max-width:1100px; }
+  /* Layout */
+  .layout { display:grid; grid-template-columns:1fr 360px; gap:20px; max-width:1200px; }
 
+  /* Card */
   .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
   .card-title { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text2); margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
 
-  .form-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+  /* Form */
   .form-group { display:flex; flex-direction:column; gap:6px; }
+  .label-row { display:flex; align-items:center; gap:8px; }
   label { font-size:11px; color:var(--text2); font-weight:500; letter-spacing:0.5px; }
 
   input, select, textarea {
@@ -37,50 +41,94 @@
   select option { background:var(--surface2); }
   textarea { resize:vertical; min-height:70px; line-height:1.6; }
 
-  .duration-badge { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--accent2); background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.2); border-radius:8px; padding:8px 14px; }
+  /* Buttons */
+  .btn { border:none; border-radius:8px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:14px; font-weight:700; padding:11px 20px; transition:all 0.2s; }
+  .btn-primary { background:var(--accent); color:#fff; width:100%; margin-top:4px; }
+  .btn-primary:hover { background:#6b8fff; transform:translateY(-1px); }
+  .btn-sm { font-size:11px; padding:5px 10px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:600; transition:all 0.15s; white-space:nowrap; }
+  .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-edit { font-size:10px; padding:3px 8px; background:transparent; color:var(--text2); border:1px solid var(--border); border-radius:4px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; transition:all 0.15s; flex-shrink:0; }
+  .btn-edit:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-icon { background:none; border:none; cursor:pointer; color:var(--text2); font-size:13px; padding:2px 6px; border-radius:4px; transition:all 0.15s; flex-shrink:0; }
+  .btn-icon:hover { color:var(--text); background:rgba(255,255,255,0.08); }
+  .btn-icon.danger:hover { color:var(--danger); background:rgba(255,95,126,0.1); }
+
+  /* Record button */
+  .btn-record {
+    width:100%; padding:12px 20px; font-size:15px; font-weight:700;
+    border:2px solid var(--accent); background:rgba(79,124,255,0.1); color:var(--accent);
+    border-radius:8px; cursor:pointer; font-family:'Noto Sans JP',sans-serif;
+    transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-bottom:14px;
+  }
+  .btn-record:hover { background:rgba(79,124,255,0.2); }
+  .btn-record.recording {
+    border-color:var(--danger); background:rgba(255,95,126,0.12); color:var(--danger);
+    animation:pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.65} }
+
+  /* Time row */
+  .time-row { display:grid; grid-template-columns:1fr auto 1fr auto; gap:8px; align-items:end; margin-bottom:12px; }
+
+  /* Duration badge */
+  .duration-badge { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--accent2); background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.2); border-radius:8px; padding:8px 14px; margin-bottom:14px; }
   .duration-badge span { font-size:11px; color:var(--text2); font-family:'Noto Sans JP',sans-serif; }
 
-  .btn { border:none; border-radius:8px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:14px; font-weight:700; padding:11px 20px; transition:all 0.2s; }
-  .btn-primary { background:var(--accent); color:#fff; width:100%; margin-top:12px; }
-  .btn-primary:hover { background:#6b8fff; transform:translateY(-1px); }
-  .btn-sm { font-size:12px; padding:5px 12px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
-  .btn-sm:hover { border-color:var(--accent); color:var(--accent); }
+  /* Checkbox (company) */
+  .cbx-grid { display:flex; flex-wrap:wrap; gap:6px; padding:4px 0; min-height:34px; }
+  .cbx-item {
+    display:inline-flex; align-items:center; gap:4px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+    padding:5px 10px; cursor:pointer; font-size:12px; user-select:none;
+    transition:all 0.15s; color:var(--text2);
+  }
+  .cbx-item:hover { border-color:var(--accent); color:var(--text); }
+  .cbx-item.checked { background:rgba(79,124,255,0.15); border-color:var(--accent); color:var(--accent); font-weight:600; }
 
+  /* Editor panel */
+  .editor-panel { display:none; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface2); margin-top:6px; }
+  .editor-panel.open { display:block; }
+  .editor-list { display:flex; flex-direction:column; gap:2px; margin-bottom:10px; max-height:160px; overflow-y:auto; }
+  .editor-item { display:flex; align-items:center; gap:6px; padding:4px 6px; border-radius:6px; }
+  .editor-item:hover { background:rgba(255,255,255,0.04); }
+  .editor-name { flex:1; font-size:13px; color:var(--text); }
+  .editor-item input[type="text"] { flex:1; background:var(--surface); border:1px solid var(--accent); border-radius:6px; color:var(--text); padding:4px 8px; font-size:13px; outline:none; width:auto; }
+  .editor-add { display:flex; gap:6px; padding-top:8px; border-top:1px solid var(--border); }
+  .editor-add input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:6px 10px; font-size:13px; outline:none; }
+  .editor-add input:focus { border-color:var(--accent); }
+
+  /* Log table */
   .log-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:12px; }
-  .log-table th { text-align:left; padding:8px 10px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text2); border-bottom:1px solid var(--border); }
+  .log-table th { text-align:left; padding:8px 10px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text2); border-bottom:1px solid var(--border); white-space:nowrap; }
   .log-table td { padding:10px; border-bottom:1px solid rgba(46,51,80,0.5); vertical-align:top; }
   .log-table tr:last-child td { border-bottom:none; }
   .log-table tr:hover td { background:rgba(79,124,255,0.04); }
-
-  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap; }
   .time-cell { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text2); white-space:nowrap; }
   .dur-cell { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--accent2); white-space:nowrap; }
-  .content-cell { color:var(--text); line-height:1.5; max-width:260px; }
+  .content-cell { color:var(--text); line-height:1.5; max-width:200px; }
+  .date-cell { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text2); white-space:nowrap; }
+  .company-cell { font-size:11px; color:var(--text2); max-width:90px; line-height:1.4; }
   .del-btn { background:none; border:none; color:var(--text2); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; transition:all 0.15s; }
   .del-btn:hover { color:var(--danger); background:rgba(255,95,126,0.1); }
+  .empty-state { color:var(--text2); font-size:12px; text-align:center; padding:20px; }
 
+  /* Sidebar */
   .sidebar { display:flex; flex-direction:column; gap:16px; }
-  .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
+  .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
   .stat-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
-  .stat-box .stat-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:4px; }
-  .stat-box .stat-value { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; color:var(--accent); }
-  .stat-box .stat-value.green { color:var(--accent2); }
-
+  .stat-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:4px; }
+  .stat-value { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; color:var(--accent); }
+  .stat-value.green { color:var(--accent2); }
   .cat-list { display:flex; flex-direction:column; gap:8px; }
   .cat-item { display:flex; align-items:center; gap:10px; }
   .cat-bar-wrap { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
   .cat-bar { height:100%; border-radius:3px; transition:width 0.4s ease; }
-  .cat-name { font-size:12px; min-width:70px; color:var(--text2); }
+  .cat-name { font-size:12px; min-width:80px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cat-time { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text2); min-width:36px; text-align:right; }
 
-  .report-area { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.8; white-space:pre-wrap; min-height:120px; color:var(--text); font-family:'Noto Sans JP',sans-serif; }
-  .empty-state { color:var(--text2); font-size:12px; text-align:center; padding:20px; }
-
-  .btn-copy { background:rgba(0,212,170,0.12); color:var(--accent2); border:1px solid rgba(0,212,170,0.3); border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; }
-  .btn-copy:hover { background:rgba(0,212,170,0.2); }
-
-  /* ===== Notion設定パネル ===== */
-  .notion-panel { margin-top:0; }
+  /* Notion panel */
   .notion-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text2); user-select:none; padding:6px 0; }
   .notion-toggle:hover { color:var(--text); }
   .notion-icon { width:18px; height:18px; background:#fff; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -91,28 +139,34 @@
   .notion-status.ok { background:rgba(0,212,170,0.1); color:var(--accent2); border:1px solid rgba(0,212,170,0.25); display:block; }
   .notion-status.err { background:rgba(255,95,126,0.1); color:var(--danger); border:1px solid rgba(255,95,126,0.25); display:block; }
   .notion-status.loading { background:rgba(79,124,255,0.1); color:var(--accent); border:1px solid rgba(79,124,255,0.25); display:block; }
-
   .btn-notion { background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
   .btn-notion:hover { background:rgba(255,255,255,0.18); }
   .btn-notion:disabled { opacity:0.4; cursor:not-allowed; }
-
-  .notion-log-status { font-size:11px; margin-left:6px; }
+  .notion-log-status { font-size:12px; }
   .sent { color:var(--accent2); }
   .unsent { color:var(--text2); }
+  .notion-err { color:var(--danger); cursor:help; }
 
+  /* Report */
+  .report-area { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.8; white-space:pre-wrap; min-height:120px; color:var(--text); font-family:'Noto Sans JP',sans-serif; }
+  .btn-copy { background:rgba(0,212,170,0.12); color:var(--accent2); border:1px solid rgba(0,212,170,0.3); border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; }
+  .btn-copy:hover { background:rgba(0,212,170,0.2); }
+
+  /* Toast */
   .toast { position:fixed; bottom:24px; right:24px; background:var(--accent2); color:#0f1117; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:700; opacity:0; transform:translateY(10px); transition:all 0.3s; pointer-events:none; z-index:100; }
   .toast.show { opacity:1; transform:translateY(0); }
   .toast.error { background:var(--danger); color:#fff; }
 
   .help-text { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
-  .divider { border:none; border-top:1px solid var(--border); margin:12px 0; }
+  .section-gap { margin-bottom:14px; }
 
-  .c0{background:#4f7cff} .c0t{color:#4f7cff;background:rgba(79,124,255,0.12)}
-  .c1{background:#00d4aa} .c1t{color:#00d4aa;background:rgba(0,212,170,0.12)}
-  .c2{background:#ffb347} .c2t{color:#ffb347;background:rgba(255,179,71,0.12)}
-  .c3{background:#ff5f7e} .c3t{color:#ff5f7e;background:rgba(255,95,126,0.12)}
-  .c4{background:#a78bfa} .c4t{color:#a78bfa;background:rgba(167,139,250,0.12)}
-  .c5{background:#38bdf8} .c5t{color:#38bdf8;background:rgba(56,189,248,0.12)}
+  /* Color classes */
+  .c0{background:#4f7cff}.c0t{color:#4f7cff;background:rgba(79,124,255,0.12)}
+  .c1{background:#00d4aa}.c1t{color:#00d4aa;background:rgba(0,212,170,0.12)}
+  .c2{background:#ffb347}.c2t{color:#ffb347;background:rgba(255,179,71,0.12)}
+  .c3{background:#ff5f7e}.c3t{color:#ff5f7e;background:rgba(255,95,126,0.12)}
+  .c4{background:#a78bfa}.c4t{color:#a78bfa;background:rgba(167,139,250,0.12)}
+  .c5{background:#38bdf8}.c5t{color:#38bdf8;background:rgba(56,189,248,0.12)}
 </style>
 </head>
 <body>
@@ -123,62 +177,82 @@
 </div>
 
 <div class="layout">
+
   <!-- 左：入力 + ログ -->
   <div>
     <div class="card" style="margin-bottom:16px;">
       <div class="card-title">新規記録</div>
-      <div class="form-row">
-        <div class="form-group">
+
+      <!-- 大項目 -->
+      <div class="section-gap">
+        <div class="label-row" style="margin-bottom:6px;">
           <label>大項目</label>
-          <select id="category">
-            <option value="">選択してください</option>
-            <option>営業・商談</option>
-            <option>開発・実装</option>
-            <option>会議・MTG</option>
-            <option>資料作成</option>
-            <option>メール・連絡</option>
-            <option>その他</option>
-          </select>
+          <button class="btn-edit" onclick="toggleCatEditor()">⚙ 項目を編集</button>
         </div>
+        <select id="category">
+          <option value="">選択してください</option>
+        </select>
+        <div class="editor-panel" id="catEditorPanel"></div>
+      </div>
+
+      <!-- 中項目（会社） -->
+      <div class="section-gap">
+        <div class="label-row" style="margin-bottom:6px;">
+          <label>中項目（会社）</label>
+          <button class="btn-edit" onclick="toggleCompanyEditor()">⚙ 項目を編集</button>
+        </div>
+        <div class="cbx-grid" id="companyCheckboxes"></div>
+        <div class="editor-panel" id="companyEditorPanel"></div>
+      </div>
+
+      <!-- 記録ボタン -->
+      <button class="btn-record" id="recordBtn" onclick="toggleRecord()">
+        <span id="recordIcon">●</span>
+        <span id="recordLabel">記録開始（現在時刻）</span>
+      </button>
+
+      <!-- 時間入力 -->
+      <div class="time-row">
         <div class="form-group">
           <label>開始時間</label>
-          <input type="time" id="startTime" step="1800">
+          <input type="time" id="startTime" onchange="calcDuration()">
         </div>
+        <button class="btn-sm" onclick="setNow('startTime')" title="30分単位で丸める">開始＝今(丸)</button>
         <div class="form-group">
           <label>終了時間</label>
-          <input type="time" id="endTime" step="1800">
+          <input type="time" id="endTime" onchange="calcDuration()">
         </div>
+        <button class="btn-sm" onclick="setNow('endTime')" title="30分単位で丸める">終了＝今(丸)</button>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div class="duration-badge" id="durationDisplay">--.-<span>h</span></div>
-        <button class="btn btn-sm" onclick="setNow('startTime')">開始=今</button>
-        <button class="btn btn-sm" onclick="setNow('endTime')">終了=今</button>
-      </div>
-      <div class="form-group">
+
+      <div class="duration-badge" id="durationDisplay">--.-<span>h</span></div>
+
+      <!-- 作業内容 -->
+      <div class="form-group section-gap">
         <label>作業内容</label>
         <textarea id="content" placeholder="作業の内容を入力してください…"></textarea>
       </div>
+
       <button class="btn btn-primary" onclick="addLog()">＋ 記録を追加</button>
     </div>
 
+    <!-- ログ一覧 -->
     <div class="card">
       <div class="card-title">
-        <span>本日のログ</span>
-        <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()" style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
-          <span id="notionBtnIcon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v16H4V4z" fill="white" rx="2"/><path d="M9 8l6 4-6 4V8z" fill="#0f1117"/></svg>
-          </span>
-          Notionへ一括送信
+        <span>作業ログ（全期間）</span>
+        <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()"
+          style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
+          未送信をNotion再送信
         </button>
       </div>
       <table class="log-table">
         <thead>
           <tr>
-            <th>大項目</th><th>時間</th><th>工数</th><th>内容</th><th>Notion</th><th></th>
+            <th>日付</th><th>大項目</th><th>会社</th><th>時間</th><th>工数</th><th>内容</th><th>Notion</th><th></th>
           </tr>
         </thead>
         <tbody id="logBody">
-          <tr><td colspan="6"><div class="empty-state">記録がありません</div></td></tr>
+          <tr><td colspan="8"><div class="empty-state">記録がありません</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -186,8 +260,10 @@
 
   <!-- 右：サマリー + Notion設定 + 日報 -->
   <div class="sidebar">
+
+    <!-- 今日のサマリー -->
     <div class="card">
-      <div class="card-title">サマリー</div>
+      <div class="card-title">今日のサマリー</div>
       <div class="summary-grid">
         <div class="stat-box">
           <div class="stat-label">総工数</div>
@@ -202,7 +278,7 @@
     </div>
 
     <!-- Notion設定 -->
-    <div class="card notion-panel">
+    <div class="card">
       <div class="card-title">
         <div class="notion-toggle" onclick="toggleNotion()">
           <span class="notion-icon">
@@ -211,15 +287,14 @@
               <path d="M6 6h12v2H6zm0 4h8v2H6zm0 4h10v2H6z" fill="white"/>
             </svg>
           </span>
-          <span id="notionToggleLabel">Notion連携設定</span>
+          <span>Notion連携設定</span>
           <span id="notionToggleArrow" style="margin-left:auto;font-size:10px;">▼</span>
         </div>
         <span id="notionConnectedBadge" style="display:none;font-size:10px;background:rgba(0,212,170,0.15);color:var(--accent2);padding:2px 8px;border-radius:4px;border:1px solid rgba(0,212,170,0.3);">接続済</span>
       </div>
-
       <div class="notion-body" id="notionBody">
         <div class="form-group" style="margin-bottom:10px;">
-          <label>Integration Token（Internal Integration Secret）</label>
+          <label>Integration Token</label>
           <input type="password" id="notionToken" placeholder="secret_xxxxxxxxxxxx" oninput="saveSettings()">
           <div class="help-text">Notion → 設定 → コネクト → 新しいインテグレーション で取得</div>
         </div>
@@ -233,26 +308,451 @@
       </div>
     </div>
 
+    <!-- 日報プレビュー -->
     <div class="card">
       <div class="card-title">日報プレビュー（kintone用）</div>
       <div class="report-area" id="reportArea"><span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span></div>
       <button class="btn-copy" onclick="copyReport()">📋 日報をコピー</button>
     </div>
+
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const logs = JSON.parse(localStorage.getItem('work_logs') || '[]');
-const CATS = ['営業・商談','開発・実装','会議・MTG','資料作成','メール・連絡','その他'];
+// ── デフォルト値 ──────────────────────────────────────────────────────
+const DEFAULT_CATS = ['営業・商談', '開発・実装', '会議・MTG', '資料作成', 'メール・連絡', 'その他'];
+const DEFAULT_COMPANIES = ['会社A', '会社B', '会社C'];
 const COLORS = ['c0','c1','c2','c3','c4','c5'];
-const today = new Date();
 
+// ── State ─────────────────────────────────────────────────────────────
+let cats      = JSON.parse(localStorage.getItem('work_cats'))      || DEFAULT_CATS.slice();
+let companies = JSON.parse(localStorage.getItem('work_companies')) || DEFAULT_COMPANIES.slice();
+let logs      = JSON.parse(localStorage.getItem('work_logs'))      || [];
+let recordingState  = null; // null | 'started'
+let editingCatIdx   = null;
+let editingCompIdx  = null;
+
+// 旧バージョンのログデータに不足フィールドを補完
+logs.forEach((l, i) => {
+  if (!l.id)        l.id = Date.now() + i;
+  if (!l.date)      l.date = getTodayStr();
+  if (!l.companies) l.companies = [];
+  if (l.notionError === undefined) l.notionError = null;
+});
+saveLogs();
+
+// ── 汎用ユーティリティ ──────────────────────────────────────────────
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('ja-JP', { month:'numeric', day:'numeric', weekday:'short' });
+}
+
+function timeToMin(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function colorIdx(cat) {
+  const i = cats.indexOf(cat);
+  return i >= 0 ? i % COLORS.length : COLORS.length - 1;
+}
+
+function saveLogs()     { localStorage.setItem('work_logs',      JSON.stringify(logs));     }
+function saveCats()     { localStorage.setItem('work_cats',      JSON.stringify(cats));     }
+function saveCompanies(){ localStorage.setItem('work_companies', JSON.stringify(companies));}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+// ── 日付バッジ ────────────────────────────────────────────────────────
 document.getElementById('todayLabel').textContent =
-  today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  new Date().toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
 
-// 設定の読み込み・保存
+// ── 大項目管理 ────────────────────────────────────────────────────────
+function buildCatSelect() {
+  const sel = document.getElementById('category');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>' +
+    cats.map(c => `<option value="${escHtml(c)}"${c === cur ? ' selected' : ''}>${escHtml(c)}</option>`).join('');
+}
+
+function toggleCatEditor() {
+  const panel = document.getElementById('catEditorPanel');
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) renderCatEditor();
+  else editingCatIdx = null;
+}
+
+function renderCatEditor() {
+  const panel = document.getElementById('catEditorPanel');
+  let html = '<div class="editor-list">';
+  cats.forEach((c, i) => {
+    if (editingCatIdx === i) {
+      html += `<div class="editor-item">
+        <input type="text" id="catIn_${i}" value="${escHtml(c)}"
+          onkeydown="if(event.key==='Enter')saveCatEdit(${i});if(event.key==='Escape')cancelCatEdit()">
+        <button class="btn-icon" onclick="saveCatEdit(${i})" title="確定">✓</button>
+        <button class="btn-icon danger" onclick="cancelCatEdit()" title="キャンセル">✕</button>
+      </div>`;
+    } else {
+      html += `<div class="editor-item">
+        <span class="editor-name">${escHtml(c)}</span>
+        <button class="btn-icon" onclick="startCatEdit(${i})" title="名前を変更">✎</button>
+        <button class="btn-icon danger" onclick="deleteCat(${i})" title="削除">✕</button>
+      </div>`;
+    }
+  });
+  html += '</div><div class="editor-add">' +
+    `<input type="text" id="newCatInput" placeholder="新しい大項目" onkeydown="if(event.key==='Enter')addCat()">` +
+    `<button class="btn-sm" onclick="addCat()">追加</button></div>`;
+  panel.innerHTML = html;
+  if (editingCatIdx !== null) {
+    const inp = document.getElementById(`catIn_${editingCatIdx}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function startCatEdit(i)  { editingCatIdx = i; renderCatEditor(); }
+function cancelCatEdit()  { editingCatIdx = null; renderCatEditor(); }
+
+function saveCatEdit(i) {
+  const val = (document.getElementById(`catIn_${i}`)?.value || '').trim();
+  if (!val) return;
+  if (cats.includes(val) && cats[i] !== val) { alert('同じ名前の項目が既にあります'); return; }
+  cats[i] = val;
+  editingCatIdx = null;
+  saveCats(); buildCatSelect(); renderCatEditor();
+}
+
+function addCat() {
+  const val = (document.getElementById('newCatInput')?.value || '').trim();
+  if (!val) return;
+  if (cats.includes(val)) { alert('同じ名前の項目が既にあります'); return; }
+  cats.push(val);
+  saveCats(); buildCatSelect(); renderCatEditor();
+}
+
+function deleteCat(i) {
+  if (!confirm(`「${cats[i]}」を削除しますか？`)) return;
+  cats.splice(i, 1);
+  if (editingCatIdx === i) editingCatIdx = null;
+  else if (editingCatIdx !== null && editingCatIdx > i) editingCatIdx--;
+  saveCats(); buildCatSelect(); renderCatEditor();
+}
+
+// ── 中項目（会社）管理 ────────────────────────────────────────────────
+function getSelectedCompanies() {
+  return [...document.querySelectorAll('.cbx-item.checked')]
+    .map(el => el.dataset.name);
+}
+
+function buildCompanyCheckboxes() {
+  const grid = document.getElementById('companyCheckboxes');
+  const selected = getSelectedCompanies();
+  grid.innerHTML = companies.map(c =>
+    `<span class="cbx-item${selected.includes(c) ? ' checked' : ''}" data-name="${escHtml(c)}">${escHtml(c)}</span>`
+  ).join('');
+  grid.querySelectorAll('.cbx-item').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('checked'));
+  });
+}
+
+function toggleCompanyEditor() {
+  const panel = document.getElementById('companyEditorPanel');
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) renderCompanyEditor();
+  else editingCompIdx = null;
+}
+
+function renderCompanyEditor() {
+  const panel = document.getElementById('companyEditorPanel');
+  let html = '<div class="editor-list">';
+  companies.forEach((c, i) => {
+    if (editingCompIdx === i) {
+      html += `<div class="editor-item">
+        <input type="text" id="compIn_${i}" value="${escHtml(c)}"
+          onkeydown="if(event.key==='Enter')saveCompEdit(${i});if(event.key==='Escape')cancelCompEdit()">
+        <button class="btn-icon" onclick="saveCompEdit(${i})" title="確定">✓</button>
+        <button class="btn-icon danger" onclick="cancelCompEdit()" title="キャンセル">✕</button>
+      </div>`;
+    } else {
+      html += `<div class="editor-item">
+        <span class="editor-name">${escHtml(c)}</span>
+        <button class="btn-icon" onclick="startCompEdit(${i})" title="名前を変更">✎</button>
+        <button class="btn-icon danger" onclick="deleteComp(${i})" title="削除">✕</button>
+      </div>`;
+    }
+  });
+  html += '</div><div class="editor-add">' +
+    `<input type="text" id="newCompInput" placeholder="新しい会社名" onkeydown="if(event.key==='Enter')addComp()">` +
+    `<button class="btn-sm" onclick="addComp()">追加</button></div>`;
+  panel.innerHTML = html;
+  if (editingCompIdx !== null) {
+    const inp = document.getElementById(`compIn_${editingCompIdx}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function startCompEdit(i) { editingCompIdx = i; renderCompanyEditor(); }
+function cancelCompEdit() { editingCompIdx = null; renderCompanyEditor(); }
+
+function saveCompEdit(i) {
+  const val = (document.getElementById(`compIn_${i}`)?.value || '').trim();
+  if (!val) return;
+  if (companies.includes(val) && companies[i] !== val) { alert('同じ名前の項目が既にあります'); return; }
+  companies[i] = val;
+  editingCompIdx = null;
+  saveCompanies(); buildCompanyCheckboxes(); renderCompanyEditor();
+}
+
+function addComp() {
+  const val = (document.getElementById('newCompInput')?.value || '').trim();
+  if (!val) return;
+  if (companies.includes(val)) { alert('同じ名前の項目が既にあります'); return; }
+  companies.push(val);
+  saveCompanies(); buildCompanyCheckboxes(); renderCompanyEditor();
+}
+
+function deleteComp(i) {
+  if (!confirm(`「${companies[i]}」を削除しますか？`)) return;
+  companies.splice(i, 1);
+  if (editingCompIdx === i) editingCompIdx = null;
+  else if (editingCompIdx !== null && editingCompIdx > i) editingCompIdx--;
+  saveCompanies(); buildCompanyCheckboxes(); renderCompanyEditor();
+}
+
+// ── 記録ボタン ────────────────────────────────────────────────────────
+function toggleRecord() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  const t   = hh + ':' + mm;
+
+  if (recordingState === null) {
+    document.getElementById('startTime').value = t;
+    recordingState = 'started';
+    document.getElementById('recordBtn').classList.add('recording');
+    document.getElementById('recordIcon').textContent  = '■';
+    document.getElementById('recordLabel').textContent = `記録中… ${t} 開始 → クリックで終了`;
+    calcDuration();
+    showToast(`開始時間 ${t} を記録しました`);
+  } else {
+    document.getElementById('endTime').value = t;
+    recordingState = null;
+    document.getElementById('recordBtn').classList.remove('recording');
+    document.getElementById('recordIcon').textContent  = '●';
+    document.getElementById('recordLabel').textContent = '記録開始（現在時刻）';
+    calcDuration();
+    showToast(`終了時間 ${t} を記録しました`);
+  }
+}
+
+// ── 時間ユーティリティ ────────────────────────────────────────────────
+function setNow(id) {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = now.getMinutes() < 30 ? '00' : '30';
+  document.getElementById(id).value = hh + ':' + mm;
+  calcDuration();
+}
+
+function calcDuration() {
+  const s = timeToMin(document.getElementById('startTime').value);
+  const e = timeToMin(document.getElementById('endTime').value);
+  if (s !== null && e !== null && e > s) {
+    document.getElementById('durationDisplay').innerHTML = ((e - s) / 60).toFixed(1) + '<span>h</span>';
+  } else {
+    document.getElementById('durationDisplay').innerHTML = '--.-<span>h</span>';
+  }
+}
+
+// ── ログ追加・削除 ────────────────────────────────────────────────────
+async function addLog() {
+  const cat     = document.getElementById('category').value;
+  const start   = document.getElementById('startTime').value;
+  const end     = document.getElementById('endTime').value;
+  const content = document.getElementById('content').value.trim();
+  const selComp = getSelectedCompanies();
+
+  if (!cat || !start || !end || !content) {
+    alert('大項目・開始時間・終了時間・作業内容を入力してください');
+    return;
+  }
+  const s = timeToMin(start), e = timeToMin(end);
+  if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
+
+  const log = {
+    id: Date.now(),
+    date: getTodayStr(),
+    cat,
+    companies: selComp,
+    start, end, content,
+    dur: (e - s) / 60,
+    notionSent: false,
+    notionId: null,
+    notionError: null
+  };
+  logs.push(log);
+  logs.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+
+  // フォームリセット
+  document.getElementById('category').value  = '';
+  document.getElementById('startTime').value = end;
+  document.getElementById('endTime').value   = '';
+  document.getElementById('content').value   = '';
+  document.querySelectorAll('.cbx-item.checked').forEach(el => el.classList.remove('checked'));
+  recordingState = null;
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordIcon').textContent  = '●';
+  document.getElementById('recordLabel').textContent = '記録開始（現在時刻）';
+  calcDuration();
+
+  saveLogs();
+  render();
+
+  // Notion設定済みなら自動送信
+  const token = localStorage.getItem('notion_token');
+  const dbId  = localStorage.getItem('notion_db_id');
+  if (token && dbId) {
+    showToast('Notionへ送信中…');
+    try {
+      const id = await sendOneToNotion(log, token, dbId);
+      log.notionSent  = true;
+      log.notionId    = id;
+      log.notionError = null;
+      saveLogs(); render();
+      showToast('✓ Notionへ送信しました');
+    } catch (err) {
+      log.notionError = err.message;
+      saveLogs(); render();
+      showToast('Notion自動送信に失敗しました。手動再送信できます。', true);
+    }
+  }
+}
+
+function deleteLog(id) {
+  const i = logs.findIndex(l => l.id === id);
+  if (i < 0) return;
+  if (!confirm('このログを削除しますか？')) return;
+  logs.splice(i, 1);
+  saveLogs(); render();
+}
+
+// ── 描画 ─────────────────────────────────────────────────────────────
+function render() {
+  const tbody = document.getElementById('logBody');
+
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state">記録がありません</div></td></tr>';
+  } else {
+    tbody.innerHTML = [...logs].reverse().map(l => {
+      const ci = colorIdx(l.cat);
+      let notionMark;
+      if (l.notionSent) {
+        notionMark = `<span class="notion-log-status sent" title="Notion送信済">✓</span>`;
+      } else if (l.notionError) {
+        notionMark = `<span class="notion-log-status notion-err" title="${escHtml(l.notionError)}">!</span>`;
+      } else {
+        notionMark = `<span class="notion-log-status unsent" title="未送信">−</span>`;
+      }
+      const compStr = (l.companies && l.companies.length > 0) ? l.companies.join('<br>') : '−';
+      return `<tr>
+        <td class="date-cell">${escHtml(formatDateShort(l.date))}</td>
+        <td><span class="tag ${COLORS[ci]}t">${escHtml(l.cat)}</span></td>
+        <td class="company-cell">${l.companies && l.companies.length > 0 ? l.companies.map(escHtml).join('<br>') : '−'}</td>
+        <td class="time-cell">${l.start}〜${l.end}</td>
+        <td class="dur-cell">${l.dur.toFixed(1)}h</td>
+        <td class="content-cell">${escHtml(l.content).replace(/\n/g,'<br>')}</td>
+        <td style="text-align:center">${notionMark}</td>
+        <td><button class="del-btn" onclick="deleteLog(${l.id})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 今日のサマリー
+  const todayStr  = getTodayStr();
+  const todayLogs = logs.filter(l => l.date === todayStr);
+  const total     = todayLogs.reduce((s, l) => s + l.dur, 0);
+  document.getElementById('totalHours').innerHTML =
+    total.toFixed(1) + '<span style="font-size:13px;color:var(--text2)">h</span>';
+  document.getElementById('totalCount').innerHTML =
+    todayLogs.length + '<span style="font-size:13px;color:var(--text2)">件</span>';
+
+  const catMap = {};
+  todayLogs.forEach(l => { catMap[l.cat] = (catMap[l.cat] || 0) + l.dur; });
+  document.getElementById('catSummary').innerHTML = Object.entries(catMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, h]) => {
+      const ci  = colorIdx(cat);
+      const pct = total > 0 ? (h / total * 100).toFixed(0) : 0;
+      return `<div class="cat-item">
+        <span class="cat-name">${escHtml(cat)}</span>
+        <div class="cat-bar-wrap"><div class="cat-bar ${COLORS[ci]}" style="width:${pct}%"></div></div>
+        <span class="cat-time">${h.toFixed(1)}h</span>
+      </div>`;
+    }).join('');
+
+  // 未送信ボタン制御
+  const token   = localStorage.getItem('notion_token');
+  const dbId    = localStorage.getItem('notion_db_id');
+  const unsent  = logs.filter(l => !l.notionSent);
+  document.getElementById('btnSendAll').disabled = !token || !dbId || unsent.length === 0;
+
+  generateReport(todayLogs, total);
+}
+
+// ── 日報生成 ──────────────────────────────────────────────────────────
+function generateReport(todayLogs, total) {
+  if (todayLogs.length === 0) {
+    document.getElementById('reportArea').innerHTML =
+      '<span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span>';
+    return;
+  }
+  const dateStr = new Date().toLocaleDateString('ja-JP',
+    { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  const catMap = {};
+  todayLogs.forEach(l => { if (!catMap[l.cat]) catMap[l.cat] = []; catMap[l.cat].push(l); });
+
+  let r = `【日報】${dateStr}\n━━━━━━━━━━━━━━━━━━\n`;
+  r += `■ 総工数：${total.toFixed(1)}h（${todayLogs.length}件）\n\n■ 作業内容\n`;
+  todayLogs.forEach(l => {
+    const comp = (l.companies && l.companies.length > 0) ? ` [${l.companies.join('/')}]` : '';
+    r += `\n[${l.start}〜${l.end}]（${l.dur.toFixed(1)}h）${l.cat}${comp}\n  ${l.content}\n`;
+  });
+  r += `\n━━━━━━━━━━━━━━━━━━\n■ カテゴリ別集計\n`;
+  Object.entries(catMap)
+    .sort((a, b) => b[1].reduce((s, l) => s + l.dur, 0) - a[1].reduce((s, l) => s + l.dur, 0))
+    .forEach(([cat, ls]) => {
+      r += `  ${cat}：${ls.reduce((s, l) => s + l.dur, 0).toFixed(1)}h\n`;
+    });
+  document.getElementById('reportArea').textContent = r;
+}
+
+function copyReport() {
+  const text = document.getElementById('reportArea').textContent;
+  if (!text || text.includes('記録を追加')) return;
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました！'));
+}
+
+// ── Notion設定 ────────────────────────────────────────────────────────
 function loadSettings() {
   const token = localStorage.getItem('notion_token') || '';
   const dbId  = localStorage.getItem('notion_db_id') || '';
@@ -260,17 +760,16 @@ function loadSettings() {
   document.getElementById('notionDbId').value  = dbId;
   if (token && dbId) {
     document.getElementById('notionConnectedBadge').style.display = 'inline';
-    document.getElementById('btnSendAll').disabled = false;
   }
 }
+
 function saveSettings() {
   const token = document.getElementById('notionToken').value.trim();
   const dbId  = document.getElementById('notionDbId').value.trim();
   localStorage.setItem('notion_token', token);
   localStorage.setItem('notion_db_id', dbId);
-  const ok = token && dbId;
-  document.getElementById('notionConnectedBadge').style.display = ok ? 'inline' : 'none';
-  document.getElementById('btnSendAll').disabled = !ok || logs.length === 0;
+  document.getElementById('notionConnectedBadge').style.display = (token && dbId) ? 'inline' : 'none';
+  render();
 }
 
 function toggleNotion() {
@@ -280,191 +779,57 @@ function toggleNotion() {
   arrow.textContent = open ? '▲' : '▼';
 }
 
-// 接続テスト
 async function testConnection() {
   const token = document.getElementById('notionToken').value.trim();
   const dbId  = document.getElementById('notionDbId').value.trim();
-  const st    = document.getElementById('notionStatus');
-  if (!token || !dbId) { showStatus('err','Token と Database ID を入力してください'); return; }
-  showStatus('loading','接続確認中...');
+  if (!token || !dbId) { showStatus('err', 'Token と Database ID を入力してください'); return; }
+  showStatus('loading', '接続確認中...');
   try {
     const res = await fetch(`https://notion-proxy.itjyouhou.workers.dev/v1/databases/${dbId.replace(/-/g,'')}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Notion-Version': '2022-06-28'
-      }
+      headers: { 'Authorization': `Bearer ${token}`, 'Notion-Version': '2022-06-28' }
     });
     if (res.ok) {
-      const data = await res.json();
+      const data  = await res.json();
       const title = data.title?.[0]?.plain_text || 'データベース';
       showStatus('ok', `✓ 接続成功：「${title}」に接続しました`);
       document.getElementById('notionConnectedBadge').style.display = 'inline';
-      document.getElementById('btnSendAll').disabled = logs.length === 0;
     } else {
       const err = await res.json();
       showStatus('err', `エラー (${res.status})：${err.message || '接続に失敗しました'}`);
     }
-  } catch(e) {
-    showStatus('err','通信エラー：' + e.message);
+  } catch (e) {
+    showStatus('err', '通信エラー：' + e.message);
   }
 }
+
 function showStatus(type, msg) {
   const el = document.getElementById('notionStatus');
   el.className = 'notion-status ' + type;
   el.textContent = msg;
 }
 
-// ========== 工数ログ ==========
-function colorIdx(cat) { const i = CATS.indexOf(cat); return i >= 0 ? i : 5; }
-
-function setNow(id) {
-  const now = new Date();
-  const hh  = String(now.getHours()).padStart(2,'0');
-  const mm  = now.getMinutes() < 30 ? '00' : '30';
-  document.getElementById(id).value = hh + ':' + mm;
-  calcDuration();
+// ── Notion送信 ────────────────────────────────────────────────────────
+function formatDbId(raw) {
+  const s = raw.replace(/-/g, '');
+  return s.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 }
 
-function timeToMin(t) {
-  if (!t) return null;
-  const [h,m] = t.split(':').map(Number);
-  return h*60+m;
-}
-
-function calcDuration() {
-  const s = timeToMin(document.getElementById('startTime').value);
-  const e = timeToMin(document.getElementById('endTime').value);
-  if (s !== null && e !== null && e > s) {
-    document.getElementById('durationDisplay').innerHTML = ((e-s)/60).toFixed(1)+'<span>h</span>';
-  } else {
-    document.getElementById('durationDisplay').innerHTML = '--.-<span>h</span>';
-  }
-}
-document.getElementById('startTime').addEventListener('change', calcDuration);
-document.getElementById('endTime').addEventListener('change', calcDuration);
-
-function addLog() {
-  const cat     = document.getElementById('category').value;
-  const start   = document.getElementById('startTime').value;
-  const end     = document.getElementById('endTime').value;
-  const content = document.getElementById('content').value.trim();
-  if (!cat||!start||!end||!content) { alert('すべての項目を入力してください'); return; }
-  const s = timeToMin(start), e = timeToMin(end);
-  if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
-  logs.push({ cat, start, end, content, dur:(e-s)/60, notionSent:false, notionId:null });
-  logs.sort((a,b)=>a.start.localeCompare(b.start));
-  document.getElementById('category').value    = '';
-  document.getElementById('startTime').value   = end;
-  document.getElementById('endTime').value     = '';
-  document.getElementById('content').value     = '';
-  calcDuration();
-  saveLogs();
-  render();
-  // 設定済みなら送信ボタン有効化
-  const token = localStorage.getItem('notion_token');
-  const dbId  = localStorage.getItem('notion_db_id');
-  if (token && dbId) document.getElementById('btnSendAll').disabled = false;
-}
-
-function deleteLog(i) {
-  logs.splice(i,1);
-  saveLogs();
-  render();
-  if (logs.length === 0) document.getElementById('btnSendAll').disabled = true;
-}
-
-function render() {
-  const tbody = document.getElementById('logBody');
-  if (logs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">記録がありません</div></td></tr>';
-  } else {
-    tbody.innerHTML = logs.map((l,i) => {
-      const ci = colorIdx(l.cat);
-      const sentMark = l.notionSent
-        ? `<span class="notion-log-status sent" title="Notion送信済">✓</span>`
-        : `<span class="notion-log-status unsent" title="未送信">−</span>`;
-      return `<tr>
-        <td><span class="tag ${COLORS[ci]}t">${l.cat}</span></td>
-        <td class="time-cell">${l.start}〜${l.end}</td>
-        <td class="dur-cell">${l.dur.toFixed(1)}h</td>
-        <td class="content-cell">${l.content.replace(/\n/g,'<br>')}</td>
-        <td style="text-align:center">${sentMark}</td>
-        <td><button class="del-btn" onclick="deleteLog(${i})">✕</button></td>
-      </tr>`;
-    }).join('');
-  }
-  const total = logs.reduce((s,l)=>s+l.dur,0);
-  document.getElementById('totalHours').innerHTML = total.toFixed(1)+'<span style="font-size:13px;color:var(--text2)">h</span>';
-  document.getElementById('totalCount').innerHTML = logs.length+'<span style="font-size:13px;color:var(--text2)">件</span>';
-
-  const catMap = {};
-  logs.forEach(l=>{ catMap[l.cat]=(catMap[l.cat]||0)+l.dur; });
-  document.getElementById('catSummary').innerHTML = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([cat,h])=>{
-    const ci  = colorIdx(cat);
-    const pct = total > 0 ? (h/total*100).toFixed(0) : 0;
-    return `<div class="cat-item"><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar ${COLORS[ci]}" style="width:${pct}%"></div></div><span class="cat-time">${h.toFixed(1)}h</span></div>`;
-  }).join('');
-
-  generateReport(total);
-}
-
-function generateReport(total) {
-  if (logs.length === 0) {
-    document.getElementById('reportArea').innerHTML = '<span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span>';
-    return;
-  }
-  const dateStr = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
-  const catMap = {};
-  logs.forEach(l=>{ if(!catMap[l.cat]) catMap[l.cat]=[]; catMap[l.cat].push(l); });
-  let r = `【日報】${dateStr}\n━━━━━━━━━━━━━━━━━━\n■ 総工数：${total.toFixed(1)}h（${logs.length}件）\n\n■ 作業内容\n`;
-  logs.forEach(l=>{ r+=`\n[${l.start}〜${l.end}]（${l.dur.toFixed(1)}h）${l.cat}\n  ${l.content}\n`; });
-  r+=`\n━━━━━━━━━━━━━━━━━━\n■ カテゴリ別集計\n`;
-  Object.entries(catMap).sort((a,b)=>b[1].reduce((s,l)=>s+l.dur,0)-a[1].reduce((s,l)=>s+l.dur,0))
-    .forEach(([cat,ls])=>{ r+=`  ${cat}：${ls.reduce((s,l)=>s+l.dur,0).toFixed(1)}h\n`; });
-  document.getElementById('reportArea').textContent = r;
-}
-
-function copyReport() {
-  const text = document.getElementById('reportArea').textContent;
-  if (!text||text.includes('記録を追加')) return;
-  navigator.clipboard.writeText(text).then(()=>showToast('コピーしました！'));
-}
-
-// ========== Notion送信 ==========
 function buildNotionPayload(log, dbId) {
-  // 日付をISO形式に変換
-  const y = today.getFullYear();
-  const m = String(today.getMonth()+1).padStart(2,'0');
-  const d = String(today.getDate()).padStart(2,'0');
-  const dateISO = `${y}-${m}-${d}`;
-
+  // ※ 中項目（会社）は Notion DB へのプロパティ追加後に連携コードをここへ追記予定
   return {
-    parent: { database_id: dbId.replace(/-/g,'').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/,'$1-$2-$3-$4-$5') },
+    parent: { database_id: formatDbId(dbId) },
     properties: {
-      "日付": {
-        date: { start: dateISO }
-      },
-      "大項目": {
-        title: [{ text: { content: log.cat } }]
-      },
-      "開始時間": {
-        rich_text: [{ text: { content: log.start } }]
-      },
-      "終了時間": {
-        rich_text: [{ text: { content: log.end } }]
-      },
-      "工数(h)": {
-        number: log.dur
-      },
-      "作業内容": {
-        rich_text: [{ text: { content: log.content } }]
-      }
+      "日付":     { date:      { start: log.date } },
+      "大項目":   { title:     [{ text: { content: log.cat } }] },
+      "開始時間": { rich_text: [{ text: { content: log.start } }] },
+      "終了時間": { rich_text: [{ text: { content: log.end } }] },
+      "工数(h)":  { number: log.dur },
+      "作業内容": { rich_text: [{ text: { content: log.content } }] }
     }
   };
 }
 
 async function sendOneToNotion(log, token, dbId) {
-  const payload = buildNotionPayload(log, dbId);
   const res = await fetch('https://notion-proxy.itjyouhou.workers.dev/v1/pages', {
     method: 'POST',
     headers: {
@@ -472,72 +837,52 @@ async function sendOneToNotion(log, token, dbId) {
       'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(buildNotionPayload(log, dbId))
   });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(`${res.status}: ${err.message}`);
   }
-  const data = await res.json();
-  return data.id;
+  return (await res.json()).id;
 }
 
 async function sendAllToNotion() {
   const token = localStorage.getItem('notion_token');
   const dbId  = localStorage.getItem('notion_db_id');
-  if (!token||!dbId) { showToast('先にNotion設定を行ってください', true); return; }
+  if (!token || !dbId) { showToast('先にNotion設定を行ってください', true); return; }
 
-  const unsent = logs.filter(l=>!l.notionSent);
+  const unsent = logs.filter(l => !l.notionSent);
   if (unsent.length === 0) { showToast('すべて送信済みです'); return; }
 
   const btn = document.getElementById('btnSendAll');
   btn.disabled = true;
-  btn.innerHTML = '<span>送信中...</span>';
+  btn.textContent = '送信中...';
 
   let ok = 0, ng = 0;
   for (const log of unsent) {
     try {
-      const id = await sendOneToNotion(log, token, dbId);
-      log.notionSent = true;
-      log.notionId   = id;
+      const id    = await sendOneToNotion(log, token, dbId);
+      log.notionSent  = true;
+      log.notionId    = id;
+      log.notionError = null;
       ok++;
-      render();
-    } catch(e) {
+    } catch (e) {
+      log.notionError = e.message;
       ng++;
       console.error('Notion送信エラー:', e);
     }
   }
+  saveLogs(); render();
+  btn.textContent = '未送信をNotion再送信';
 
-  btn.innerHTML = `<span>Notionへ一括送信</span>`;
-  btn.disabled  = logs.every(l=>l.notionSent);
-
-  if (ng === 0) {
-    showToast(`✓ ${ok}件をNotionに送信しました`);
-  } else {
-    showToast(`${ok}件送信、${ng}件失敗しました`, true);
-  }
+  if (ng === 0) showToast(`✓ ${ok}件をNotionに送信しました`);
+  else          showToast(`${ok}件送信、${ng}件失敗しました`, true);
 }
 
-// ========== ユーティリティ ==========
-function saveLogs() {
-  localStorage.setItem('work_logs', JSON.stringify(logs));
-}
-function showToast(msg, isError=false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className   = 'toast show' + (isError ? ' error' : '');
-  setTimeout(()=>{ t.className='toast'; }, 3000);
-}
-
-// 初期化
-// 日付が変わったらログをリセット
-const savedDate = localStorage.getItem('work_logs_date');
-const todayStr = today.toISOString().split('T')[0];
-if (savedDate !== todayStr) {
-  localStorage.removeItem('work_logs');
-  localStorage.setItem('work_logs_date', todayStr);
-}
+// ── 初期化 ────────────────────────────────────────────────────────────
 loadSettings();
+buildCatSelect();
+buildCompanyCheckboxes();
 render();
 </script>
 </body>
