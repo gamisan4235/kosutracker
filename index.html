@@ -861,19 +861,17 @@ function formatDbId(raw) {
 }
 
 function buildNotionPayload(log, dbId) {
-  const companyStr = (log.companies && log.companies.length > 0)
-    ? log.companies.join(', ')
-    : '';
+  const multiSelect = (log.companies || []).map(name => ({ name }));
   return {
     parent: { database_id: formatDbId(dbId) },
     properties: {
-      "日付":     { date:      { start: log.date } },
-      "大項目":   { title:     [{ text: { content: log.cat } }] },
-      "会社名":   { rich_text: [{ text: { content: companyStr } }] },
-      "開始時間": { rich_text: [{ text: { content: log.start } }] },
-      "終了時間": { rich_text: [{ text: { content: log.end } }] },
+      "日付":     { date:         { start: log.date } },
+      "大項目":   { title:        [{ text: { content: log.cat } }] },
+      "会社名":   { multi_select: multiSelect },
+      "開始時間": { rich_text:    [{ text: { content: log.start } }] },
+      "終了時間": { rich_text:    [{ text: { content: log.end } }] },
       "工数(h)":  { number: log.dur },
-      "作業内容": { rich_text: [{ text: { content: log.content } }] }
+      "作業内容": { rich_text:    [{ text: { content: log.content } }] }
     }
   };
 }
@@ -983,16 +981,12 @@ async function importFromNotion() {
       const start   = props['開始時間']?.rich_text?.[0]?.plain_text || '';
       const end     = props['終了時間']?.rich_text?.[0]?.plain_text || '';
       const content = props['作業内容']?.rich_text?.[0]?.plain_text || '';
-      const compRaw = props['会社名']?.rich_text?.[0]?.plain_text   || '';
-      const dur     = props['工数(h)']?.number ?? 0;
-      const date    = props['日付']?.date?.start || todayStr;
+      const companies = (props['会社名']?.multi_select || []).map(s => s.name);
+      const dur       = props['工数(h)']?.number ?? 0;
+      const date      = props['日付']?.date?.start || todayStr;
 
       // 最低限の項目がなければスキップ
       if (!cat || !start || !end) continue;
-
-      const companies = compRaw
-        ? compRaw.split(',').map(s => s.trim()).filter(Boolean)
-        : [];
 
       logs.push({
         id: Date.now() + added,
