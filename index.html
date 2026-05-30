@@ -20,7 +20,23 @@
   .date-badge { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent2); background:rgba(0,212,170,0.1); padding:3px 10px; border-radius:4px; border:1px solid rgba(0,212,170,0.25); }
 
   /* Layout */
-  .layout { display:grid; grid-template-columns:1fr 360px; gap:20px; max-width:1200px; }
+  .layout {
+    display:grid;
+    grid-template-columns:1fr 360px;
+    grid-template-areas:
+      "form    summary"
+      "log     notion"
+      "log     report";
+    column-gap:20px;
+    row-gap:16px;
+    max-width:1200px;
+    align-items:start;
+  }
+  .area-form    { grid-area:form; }
+  .area-log     { grid-area:log; }
+  .area-summary { grid-area:summary; }
+  .area-notion  { grid-area:notion; }
+  .area-report  { grid-area:report; }
 
   /* Card */
   .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
@@ -114,8 +130,7 @@
   .del-btn:hover { color:var(--danger); background:rgba(255,95,126,0.1); }
   .empty-state { color:var(--text2); font-size:12px; text-align:center; padding:20px; }
 
-  /* Sidebar */
-  .sidebar { display:flex; flex-direction:column; gap:16px; }
+  /* Sidebar (desktop用クラスは削除、grid-areaで制御) */
   .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
   .stat-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
   .stat-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text2); margin-bottom:4px; }
@@ -160,6 +175,32 @@
   .help-text { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.5; }
   .section-gap { margin-bottom:14px; }
 
+  /* ── モバイル（縦画面）対応 ────────────────────────────────── */
+  @media (max-width:700px) {
+    body { padding:12px; }
+    .header { margin-bottom:16px; }
+    .header h1 { font-size:18px; }
+    .layout {
+      grid-template-columns:1fr;
+      grid-template-areas:
+        "form"
+        "log"
+        "summary"
+        "report"
+        "notion";
+      row-gap:12px;
+    }
+    .card { padding:14px; }
+    /* 時間入力を2列に折り返す */
+    .time-row { grid-template-columns:1fr auto; }
+    /* ログテーブルを横スクロール可能に */
+    .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .log-table th, .log-table td { padding:7px 6px; }
+    .content-cell { max-width:120px; }
+    /* 再送信ボタンはログテーブル内に常時表示 */
+    #btnSendAll { font-size:11px; padding:4px 10px; }
+  }
+
   /* Color classes */
   .c0{background:#4f7cff}.c0t{color:#4f7cff;background:rgba(79,124,255,0.12)}
   .c1{background:#00d4aa}.c1t{color:#00d4aa;background:rgba(0,212,170,0.12)}
@@ -178,9 +219,8 @@
 
 <div class="layout">
 
-  <!-- 左：入力 + ログ -->
-  <div>
-    <div class="card" style="margin-bottom:16px;">
+  <!-- 新規記録 -->
+  <div class="card area-form">
       <div class="card-title">新規記録</div>
 
       <!-- 大項目 -->
@@ -236,8 +276,8 @@
       <button class="btn btn-primary" onclick="addLog()">＋ 記録を追加</button>
     </div>
 
-    <!-- ログ一覧 -->
-    <div class="card">
+  <!-- 作業ログ -->
+  <div class="card area-log">
       <div class="card-title">
         <span>作業ログ（全期間）</span>
         <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()"
@@ -245,6 +285,7 @@
           未送信をNotion再送信
         </button>
       </div>
+      <div class="table-scroll">
       <table class="log-table">
         <thead>
           <tr>
@@ -255,14 +296,13 @@
           <tr><td colspan="8"><div class="empty-state">記録がありません</div></td></tr>
         </tbody>
       </table>
-    </div>
+      </div>
   </div>
 
-  <!-- 右：サマリー + Notion設定 + 日報 -->
-  <div class="sidebar">
+  <!-- サマリー・Notion設定・日報（grid-areaで配置） -->
 
-    <!-- 今日のサマリー -->
-    <div class="card">
+  <!-- 今日のサマリー -->
+  <div class="card area-summary">
       <div class="card-title">今日のサマリー</div>
       <div class="summary-grid">
         <div class="stat-box">
@@ -275,10 +315,10 @@
         </div>
       </div>
       <div class="cat-list" id="catSummary"></div>
-    </div>
+  </div>
 
-    <!-- Notion設定 -->
-    <div class="card">
+  <!-- Notion設定 -->
+  <div class="card area-notion">
       <div class="card-title">
         <div class="notion-toggle" onclick="toggleNotion()">
           <span class="notion-icon">
@@ -308,14 +348,13 @@
       </div>
     </div>
 
-    <!-- 日報プレビュー -->
-    <div class="card">
+  <!-- 日報プレビュー -->
+  <div class="card area-report">
       <div class="card-title">日報プレビュー（kintone用）</div>
       <div class="report-area" id="reportArea"><span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span></div>
       <button class="btn-copy" onclick="copyReport()">📋 日報をコピー</button>
-    </div>
-
   </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
