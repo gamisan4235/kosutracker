@@ -221,7 +221,18 @@
 
   <!-- 新規記録 -->
   <div class="card area-form">
-      <div class="card-title">新規記録</div>
+      <div class="card-title" id="formTitle">新規記録</div>
+
+      <!-- 編集バナー -->
+      <div id="editBanner" style="display:none;background:rgba(255,179,71,0.12);border:1px solid rgba(255,179,71,0.3);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--warn);">✎ 編集モード — 変更を保存するか、キャンセルしてください</div>
+
+      <!-- 日付（編集時のみ） -->
+      <div class="section-gap" id="editDateRow" style="display:none;">
+        <div class="form-group">
+          <label>日付</label>
+          <input type="date" id="editDate">
+        </div>
+      </div>
 
       <!-- 大項目 -->
       <div class="section-gap">
@@ -273,7 +284,10 @@
         <textarea id="content" placeholder="作業の内容を入力してください…"></textarea>
       </div>
 
-      <button class="btn btn-primary" onclick="addLog()">＋ 記録を追加</button>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-primary" id="addBtn" onclick="addLog()" style="flex:1;">＋ 記録を追加</button>
+        <button class="btn" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:11px 16px;">キャンセル</button>
+      </div>
     </div>
 
   <!-- 作業ログ -->
@@ -378,6 +392,7 @@ let logs      = JSON.parse(localStorage.getItem('work_logs'))      || [];
 let recordingState  = null; // null | 'started'
 let editingCatIdx   = null;
 let editingCompIdx  = null;
+let editingLogId    = null;
 
 // 旧バージョンのログデータに不足フィールドを補完
 logs.forEach((l, i) => {
@@ -527,9 +542,9 @@ function getSelectedCompanies() {
     .map(el => el.dataset.name);
 }
 
-function buildCompanyCheckboxes() {
+function buildCompanyCheckboxes(preSelected) {
   const grid = document.getElementById('companyCheckboxes');
-  const selected = getSelectedCompanies();
+  const selected = preSelected !== undefined ? preSelected : getSelectedCompanies();
   grid.innerHTML = companies.map(c =>
     `<span class="cbx-item${selected.includes(c) ? ' checked' : ''}" data-name="${escHtml(c)}">${escHtml(c)}</span>`
   ).join('');
@@ -719,6 +734,151 @@ function deleteLog(id) {
   saveLogs(); render();
 }
 
+// ── ログ編集 ──────────────────────────────────────────────────────────
+function editLog(id) {
+  const log = logs.find(l => l.id === id);
+  if (!log) return;
+
+  editingLogId = id;
+
+  // フォームにデータを流し込む
+  document.getElementById('editDate').value  = log.date;
+  buildCatSelect();
+  document.getElementById('category').value  = log.cat;
+  document.getElementById('startTime').value = log.start;
+  document.getElementById('endTime').value   = log.end;
+  document.getElementById('content').value   = log.content;
+  calcDuration();
+  buildCompanyCheckboxes(log.companies);
+
+  // 記録ボタンをリセット
+  recordingState = null;
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordIcon').textContent  = '●';
+  document.getElementById('recordLabel').textContent = '記録開始（現在時刻）';
+
+  // 編集UI表示
+  document.getElementById('formTitle').textContent       = '記録を編集';
+  document.getElementById('editBanner').style.display   = 'block';
+  document.getElementById('editDateRow').style.display  = 'block';
+  document.getElementById('addBtn').textContent         = '✓ 変更を保存';
+  document.getElementById('addBtn').onclick             = saveEdit;
+  document.getElementById('cancelEditBtn').style.display = 'block';
+
+  document.querySelector('.area-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editingLogId = null;
+
+  // フォームリセット
+  document.getElementById('editDate').value  = '';
+  document.getElementById('category').value  = '';
+  document.getElementById('startTime').value = '';
+  document.getElementById('endTime').value   = '';
+  document.getElementById('content').value   = '';
+  document.querySelectorAll('.cbx-item.checked').forEach(el => el.classList.remove('checked'));
+  calcDuration();
+
+  recordingState = null;
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordIcon').textContent  = '●';
+  document.getElementById('recordLabel').textContent = '記録開始（現在時刻）';
+
+  // 通常UI復元
+  document.getElementById('formTitle').textContent        = '新規記録';
+  document.getElementById('editBanner').style.display    = 'none';
+  document.getElementById('editDateRow').style.display   = 'none';
+  document.getElementById('addBtn').textContent          = '＋ 記録を追加';
+  document.getElementById('addBtn').onclick              = addLog;
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+async function saveEdit() {
+  const log = logs.find(l => l.id === editingLogId);
+  if (!log) { cancelEdit(); return; }
+
+  const cat     = document.getElementById('category').value;
+  const date    = document.getElementById('editDate').value || log.date;
+  const start   = document.getElementById('startTime').value;
+  const end     = document.getElementById('endTime').value;
+  const content = document.getElementById('content').value.trim();
+  const selComp = getSelectedCompanies();
+
+  if (!cat || !start || !end || !content) {
+    alert('大項目・開始時間・終了時間・作業内容を入力してください');
+    return;
+  }
+  const s = timeToMin(start), e = timeToMin(end);
+  if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
+
+  const wasNotionSent = log.notionSent;
+  const prevNotionId  = log.notionId;
+
+  log.date      = date;
+  log.cat       = cat;
+  log.companies = selComp;
+  log.start     = start;
+  log.end       = end;
+  log.content   = content;
+  log.dur       = (e - s) / 60;
+
+  logs.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+  saveLogs();
+  cancelEdit();
+  render();
+
+  const token = localStorage.getItem('notion_token');
+  const dbId  = localStorage.getItem('notion_db_id');
+
+  if (token && dbId) {
+    if (wasNotionSent && prevNotionId) {
+      showToast('Notionを更新中…');
+      try {
+        await updateOneInNotion(log, token, prevNotionId);
+        log.notionError = null;
+        saveLogs(); render();
+        showToast('✓ Notionを更新しました');
+      } catch (err) {
+        log.notionError = err.message;
+        saveLogs(); render();
+        showToast('Notion更新に失敗しました', true);
+      }
+    } else if (!wasNotionSent) {
+      showToast('Notionへ送信中…');
+      try {
+        const id = await sendOneToNotion(log, token, dbId);
+        log.notionSent  = true;
+        log.notionId    = id;
+        log.notionError = null;
+        saveLogs(); render();
+        showToast('✓ Notionへ送信しました');
+      } catch (err) {
+        log.notionError = err.message;
+        saveLogs(); render();
+        showToast('Notion送信に失敗しました', true);
+      }
+    }
+  }
+}
+
+async function updateOneInNotion(log, token, pageId) {
+  const dbId = localStorage.getItem('notion_db_id');
+  const res = await fetch(`https://notion-proxy.itjyouhou.workers.dev/v1/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ properties: buildNotionPayload(log, dbId).properties })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(`${res.status}: ${err.message}`);
+  }
+}
+
 // ── 描画 ─────────────────────────────────────────────────────────────
 function render() {
   const tbody = document.getElementById('logBody');
@@ -745,7 +905,10 @@ function render() {
         <td class="dur-cell">${l.dur.toFixed(1)}h</td>
         <td class="content-cell">${escHtml(l.content).replace(/\n/g,'<br>')}</td>
         <td style="text-align:center">${notionMark}</td>
-        <td><button class="del-btn" onclick="deleteLog(${l.id})">✕</button></td>
+        <td style="white-space:nowrap">
+          <button class="del-btn" onclick="editLog(${l.id})" title="編集" style="color:var(--accent)">✎</button>
+          <button class="del-btn" onclick="deleteLog(${l.id})" title="削除">✕</button>
+        </td>
       </tr>`;
     }).join('');
   }
