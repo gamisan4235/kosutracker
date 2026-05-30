@@ -280,10 +280,16 @@
   <div class="card area-log">
       <div class="card-title">
         <span>作業ログ（全期間）</span>
-        <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()"
-          style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
-          未送信をNotion再送信
-        </button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn-notion" id="btnImport" onclick="importFromNotion()"
+            style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
+            ↓ 今日分を取り込む
+          </button>
+          <button class="btn-notion" id="btnSendAll" onclick="sendAllToNotion()"
+            style="width:auto;margin-top:0;padding:5px 14px;font-size:12px;" disabled>
+            未送信をNotion再送信
+          </button>
+        </div>
       </div>
       <div class="table-scroll">
       <table class="log-table">
@@ -754,6 +760,7 @@ function render() {
   const dbId    = localStorage.getItem('notion_db_id');
   const unsent  = logs.filter(l => !l.notionSent);
   document.getElementById('btnSendAll').disabled = !token || !dbId || unsent.length === 0;
+  document.getElementById('btnImport').disabled  = !token || !dbId;
 
   generateReport(todayLogs, total);
 }
@@ -919,6 +926,105 @@ async function sendAllToNotion() {
 
   if (ng === 0) showToast(`✓ ${ok}件をNotionに送信しました`);
   else          showToast(`${ok}件送信、${ng}件失敗しました`, true);
+}
+
+// ── Notionから当日ログを取り込む ──────────────────────────────────────
+async function importFromNotion() {
+  const token = localStorage.getItem('notion_token');
+  const dbId  = localStorage.getItem('notion_db_id');
+  if (!token || !dbId) { showToast('先にNotion設定を行ってください', true); return; }
+
+  const btn = document.getElementById('btnImport');
+  btn.disabled = true;
+  btn.textContent = '取り込み中...';
+
+  try {
+    // 当日レコードをNotionから取得
+    const todayStr = getTodayStr();
+    const res = await fetch(
+      `https://notion-proxy.itjyouhou.workers.dev/v1/databases/${formatDbId(dbId)}/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filter: {
+            property: '日付',
+            date: { equals: todayStr }
+          },
+          page_size: 100
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(`取り込みエラー (${res.status}): ${err.message || '不明'}`, true);
+      return;
+    }
+
+    const data = await res.json();
+    const pages = data.results || [];
+
+    // ローカルに記録済みの notionId セット
+    const localIds = new Set(logs.map(l => l.notionId).filter(Boolean));
+
+    let added = 0;
+    for (const page of pages) {
+      // すでにローカルにある → スキップ
+      if (localIds.has(page.id)) continue;
+
+      // Notionのプロパティから値を取り出す
+      const props = page.properties;
+      const cat     = props['大項目']?.title?.[0]?.plain_text     || '';
+      const start   = props['開始時間']?.rich_text?.[0]?.plain_text || '';
+      const end     = props['終了時間']?.rich_text?.[0]?.plain_text || '';
+      const content = props['作業内容']?.rich_text?.[0]?.plain_text || '';
+      const compRaw = props['会社名']?.rich_text?.[0]?.plain_text   || '';
+      const dur     = props['工数(h)']?.number ?? 0;
+      const date    = props['日付']?.date?.start || todayStr;
+
+      // 最低限の項目がなければスキップ
+      if (!cat || !start || !end) continue;
+
+      const companies = compRaw
+        ? compRaw.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
+      logs.push({
+        id: Date.now() + added,
+        date,
+        cat,
+        companies,
+        start,
+        end,
+        content,
+        dur,
+        notionSent: true,
+        notionId: page.id,
+        notionError: null
+      });
+      added++;
+    }
+
+    if (added > 0) {
+      logs.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+      saveLogs();
+      render();
+      showToast(`✓ ${added}件を取り込みました`);
+    } else {
+      showToast('取り込み対象なし（すべてローカルに記録済み）');
+    }
+
+  } catch (e) {
+    showToast('通信エラー: ' + e.message, true);
+  } finally {
+    btn.textContent = '↓ 今日分を取り込む';
+    btn.disabled = !localStorage.getItem('notion_token') || !localStorage.getItem('notion_db_id');
+  }
 }
 
 // ── 初期化 ────────────────────────────────────────────────────────────
