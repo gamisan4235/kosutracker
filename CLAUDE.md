@@ -56,6 +56,8 @@ APIプロキシ: `https://notion-proxy.itjyouhou.workers.dev`（CORS回避用 Cl
 | `work_companies` | 中項目・会社リスト（JSON配列） |
 | `notion_token` | Notion Integration Token |
 | `notion_db_id` | Notion Database ID |
+| `last_open_date` | 前回起動日（YYYY-MM-DD）。日付変更検知に使用 |
+| `skip_delete_confirm` | `"true"` のとき日付変更時に確認なし自動削除 |
 
 ---
 
@@ -87,6 +89,11 @@ APIプロキシ: `https://notion-proxy.itjyouhou.workers.dev`（CORS回避用 Cl
 - **記録ボタン**: 1回目クリック→現在時刻で開始時間をセット、2回目クリック→終了時間をセット（ボタンが赤く点滅）
 - **開始＝今(丸) / 終了＝今(丸)**: 30分単位に丸めてセット
 - 時間は手動入力も可能
+
+### 起動時クリーンアップ
+- アプリ起動時に `last_open_date` と今日を比較し、日付が変わっていれば前日以前のログを削除するか確認モーダルを表示
+- モーダルで「次回以降確認しない」にチェックすると、次回以降は確認なしで自動削除（`skip_delete_confirm` に保存）
+- 「残す」を選んだ場合は削除しない
 
 ### ログ管理
 - ログは日付をまたいでも削除されず、全期間分を保持
