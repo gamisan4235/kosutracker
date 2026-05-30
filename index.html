@@ -815,7 +815,9 @@ function formatDbId(raw) {
 }
 
 function buildNotionPayload(log, dbId) {
-  // ※ 中項目（会社）は Notion DB へのプロパティ追加後に連携コードをここへ追記予定
+  const companyStr = (log.companies && log.companies.length > 0)
+    ? log.companies.join(', ')
+    : '';
   return {
     parent: { database_id: formatDbId(dbId) },
     properties: {
