@@ -420,6 +420,24 @@ function saveLogs()     { localStorage.setItem('work_logs',      JSON.stringify(
 function saveCats()     { localStorage.setItem('work_cats',      JSON.stringify(cats));     }
 function saveCompanies(){ localStorage.setItem('work_companies', JSON.stringify(companies));}
 
+// YYYY-MM-DD + HH:MM → Notion用ISO日時文字列（ローカルタイムゾーン付き）
+function toNotionDateTime(dateStr, timeStr) {
+  const d      = new Date(`${dateStr}T${timeStr}:00`);
+  const offset = -d.getTimezoneOffset();
+  const sign   = offset >= 0 ? '+' : '-';
+  const pad    = n => String(n).padStart(2, '0');
+  const oh     = pad(Math.floor(Math.abs(offset) / 60));
+  const om     = pad(Math.abs(offset) % 60);
+  return `${dateStr}T${timeStr}:00${sign}${oh}:${om}`;
+}
+
+// NotionのISO日時文字列 → HH:MM（ローカル時刻）
+function notionDateTimeToTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -868,8 +886,8 @@ function buildNotionPayload(log, dbId) {
       "日付":     { date:         { start: log.date } },
       "大項目":   { title:        [{ text: { content: log.cat } }] },
       "会社名":   { multi_select: multiSelect },
-      "開始時間": { rich_text:    [{ text: { content: log.start } }] },
-      "終了時間": { rich_text:    [{ text: { content: log.end } }] },
+      "開始時間": { date: { start: toNotionDateTime(log.date, log.start) } },
+      "終了時間": { date: { start: toNotionDateTime(log.date, log.end) } },
       "工数(h)":  { number: log.dur },
       "作業内容": { rich_text:    [{ text: { content: log.content } }] }
     }
@@ -978,8 +996,8 @@ async function importFromNotion() {
       // Notionのプロパティから値を取り出す
       const props = page.properties;
       const cat     = props['大項目']?.title?.[0]?.plain_text     || '';
-      const start   = props['開始時間']?.rich_text?.[0]?.plain_text || '';
-      const end     = props['終了時間']?.rich_text?.[0]?.plain_text || '';
+      const start = notionDateTimeToTime(props['開始時間']?.date?.start);
+      const end   = notionDateTimeToTime(props['終了時間']?.date?.start);
       const content = props['作業内容']?.rich_text?.[0]?.plain_text || '';
       const companies = (props['会社名']?.multi_select || []).map(s => s.name);
       const dur       = props['工数(h)']?.number ?? 0;
