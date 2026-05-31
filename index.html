@@ -409,13 +409,26 @@
 
 <script>
 // ── デフォルト値 ──────────────────────────────────────────────────────
-const DEFAULT_CATS = ['営業・商談', '開発・実装', '会議・MTG', '資料作成', 'メール・連絡', 'その他'];
+// 項目を固定したいタイミングで DEFAULT_CATS / DEFAULT_COMPANIES を更新し
+// DEFAULT_VERSION を +1 してプッシュすると、全端末に新しいデフォルトが適用される
+const DEFAULT_VERSION   = 1;
+const DEFAULT_CATS      = ['営業・商談', '開発・実装', '会議・MTG', '資料作成', 'メール・連絡', 'その他'];
 const DEFAULT_COMPANIES = ['会社A', '会社B', '会社C'];
 const COLORS = ['c0','c1','c2','c3','c4','c5'];
 
 // ── State ─────────────────────────────────────────────────────────────
-let cats      = JSON.parse(localStorage.getItem('work_cats'))      || DEFAULT_CATS.slice();
-let companies = JSON.parse(localStorage.getItem('work_companies')) || DEFAULT_COMPANIES.slice();
+let cats, companies;
+const _defVer = parseInt(localStorage.getItem('work_defaults_version') || '0');
+if (_defVer < DEFAULT_VERSION) {
+  cats      = DEFAULT_CATS.slice();
+  companies = DEFAULT_COMPANIES.slice();
+  localStorage.setItem('work_defaults_version', String(DEFAULT_VERSION));
+  saveCats();
+  saveCompanies();
+} else {
+  cats      = JSON.parse(localStorage.getItem('work_cats'))      || DEFAULT_CATS.slice();
+  companies = JSON.parse(localStorage.getItem('work_companies')) || DEFAULT_COMPANIES.slice();
+}
 let logs      = JSON.parse(localStorage.getItem('work_logs'))      || [];
 let recordingState  = null; // null | 'started'
 let editingCatIdx   = null;
