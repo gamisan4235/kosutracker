@@ -24,19 +24,16 @@
     display:grid;
     grid-template-columns:1fr 360px;
     grid-template-areas:
-      "form    summary"
-      "log     notion"
-      "log     report";
+      "form  right"
+      "log   right";
     column-gap:20px;
     row-gap:16px;
     max-width:1200px;
     align-items:start;
   }
-  .area-form    { grid-area:form; }
-  .area-log     { grid-area:log; }
-  .area-summary { grid-area:summary; }
-  .area-notion  { grid-area:notion; }
-  .area-report  { grid-area:report; }
+  .area-form  { grid-area:form; }
+  .area-log   { grid-area:log; }
+  .area-right { grid-area:right; display:flex; flex-direction:column; gap:16px; }
 
   /* Card */
   .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
@@ -185,11 +182,13 @@
       grid-template-areas:
         "form"
         "log"
-        "summary"
-        "report"
-        "notion";
+        "right";
       row-gap:12px;
     }
+    .area-right { gap:12px; }
+    .area-summary { order:1; }
+    .area-report  { order:2; }
+    .area-notion  { order:3; }
     .card { padding:14px; }
     /* 時間入力を2列に折り返す */
     .time-row { grid-template-columns:1fr auto; }
@@ -246,7 +245,7 @@
       </div>
 
       <!-- 大分類説明 -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text2);white-space:pre;line-height:1.9;margin-bottom:14px;overflow-x:auto;font-family:'Noto Sans JP',sans-serif;">＜大分類＞
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text2);white-space:pre;line-height:1.9;margin-bottom:14px;overflow-x:auto;font-family:'BIZ UDGothic','MS Gothic','MS ゴシック','Hiragino Kaku Gothic ProN',monospace;">＜大分類＞
 システム開発・改善　　 ⇒ 開発、改修、テスト、業務改善、RPA、要件整理
 インフラ・システム運用 ⇒ サーバー、ネットワーク、クラウド、バックアップ、点検
 障害対応　　　　　　　 ⇒ 障害調査、不具合修正、復旧対応
@@ -343,7 +342,8 @@
       </div>
   </div>
 
-  <!-- サマリー・Notion設定・日報（grid-areaで配置） -->
+  <!-- 右列（サマリー・Notion設定・日報） -->
+  <div class="area-right">
 
   <!-- 今日のサマリー -->
   <div class="card area-summary">
@@ -398,6 +398,8 @@
       <div class="report-area" id="reportArea"><span style="color:var(--text2);font-size:12px;">記録を追加すると日報が自動生成されます</span></div>
       <button class="btn-copy" onclick="copyReport()">📋 日報をコピー</button>
   </div>
+
+  </div><!-- /.area-right -->
 
 </div>
 
