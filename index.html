@@ -245,10 +245,23 @@
         </div>
       </div>
 
-      <!-- 大項目 -->
+      <!-- 大分類説明 -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text2);white-space:pre;line-height:1.9;margin-bottom:14px;overflow-x:auto;font-family:'Noto Sans JP',sans-serif;">＜大分類＞
+システム開発・改善　　 ⇒ 開発、改修、テスト、業務改善、RPA、要件整理
+インフラ・システム運用 ⇒ サーバー、ネットワーク、クラウド、バックアップ、点検
+障害対応　　　　　　　 ⇒ 障害調査、不具合修正、復旧対応
+ヘルプデスク対応　　　 ⇒ 問い合わせ、PC不具合、操作説明、アカウント対応
+ＩＴ資産管理　　　　   ⇒ PC・スマホ設定、キッティング、機器管理、ライセンス管理
+セキュリティ対応　　　 ⇒ パッチ、ウイルス対策、権限管理、監査対応
+会議・打合せ　　　　　 ⇒ 全体朝礼、部門会議、ベンダー打合せ
+資料作成・教育　　　　 ⇒ マニュアル、報告書、教育、研修
+庶務・雑務　　　　　　 ⇒ 掃除、蛍光灯交換、備品整理、電話対応
+その他　　　　　　　　 ⇒ 上記に該当しない作業</div>
+
+      <!-- 大分類 -->
       <div class="section-gap">
         <div class="label-row" style="margin-bottom:6px;">
-          <label>大項目</label>
+          <label>大分類</label>
           <button class="btn-edit" onclick="toggleCatEditor()">⚙ 項目を編集</button>
         </div>
         <select id="category">
@@ -257,10 +270,10 @@
         <div class="editor-panel" id="catEditorPanel"></div>
       </div>
 
-      <!-- 中項目（会社） -->
+      <!-- 会社 -->
       <div class="section-gap">
         <div class="label-row" style="margin-bottom:6px;">
-          <label>中項目（会社）</label>
+          <label>会社</label>
           <button class="btn-edit" onclick="toggleCompanyEditor()">⚙ 項目を編集</button>
         </div>
         <div class="cbx-grid" id="companyCheckboxes"></div>
@@ -320,7 +333,7 @@
       <table class="log-table">
         <thead>
           <tr>
-            <th>日付</th><th>大項目</th><th>会社</th><th>時間</th><th>工数</th><th>内容</th><th>Notion</th><th></th>
+            <th>日付</th><th>大分類</th><th>会社</th><th>時間</th><th>工数</th><th>内容</th><th>Notion</th><th></th>
           </tr>
         </thead>
         <tbody id="logBody">
@@ -541,7 +554,7 @@ function renderCatEditor() {
     }
   });
   html += '</div><div class="editor-add">' +
-    `<input type="text" id="newCatInput" placeholder="新しい大項目" onkeydown="if(event.key==='Enter')addCat()">` +
+    `<input type="text" id="newCatInput" placeholder="新しい大分類" onkeydown="if(event.key==='Enter')addCat()">` +
     `<button class="btn-sm" onclick="addCat()">追加</button></div>`;
   panel.innerHTML = html;
   if (editingCatIdx !== null) {
@@ -713,7 +726,7 @@ async function addLog() {
   const selComp = getSelectedCompanies();
 
   if (!cat || !start || !end || !content) {
-    alert('大項目・開始時間・終了時間・作業内容を入力してください');
+    alert('大分類・開始時間・終了時間・作業内容を入力してください');
     return;
   }
   const s = timeToMin(start), e = timeToMin(end);
@@ -848,7 +861,7 @@ async function saveEdit() {
   const selComp = getSelectedCompanies();
 
   if (!cat || !start || !end || !content) {
-    alert('大項目・開始時間・終了時間・作業内容を入力してください');
+    alert('大分類・開始時間・終了時間・作業内容を入力してください');
     return;
   }
   const s = timeToMin(start), e = timeToMin(end);
@@ -1089,7 +1102,7 @@ function buildNotionPayload(log, dbId) {
     parent: { database_id: formatDbId(dbId) },
     properties: {
       "日付":     { date:         { start: log.date } },
-      "大項目":   { title:        [{ text: { content: log.cat } }] },
+      "大分類":   { title:        [{ text: { content: log.cat } }] },
       "会社名":   { multi_select: multiSelect },
       "開始時間": { date: { start: toNotionDateTime(log.date, log.start) } },
       "終了時間": { date: { start: toNotionDateTime(log.date, log.end) } },
@@ -1200,7 +1213,7 @@ async function importFromNotion() {
 
       // Notionのプロパティから値を取り出す
       const props = page.properties;
-      const cat     = props['大項目']?.title?.[0]?.plain_text     || '';
+      const cat     = props['大分類']?.title?.[0]?.plain_text     || '';
       const start = notionDateTimeToTime(props['開始時間']?.date?.start);
       const end   = notionDateTimeToTime(props['終了時間']?.date?.start);
       const content = props['作業内容']?.rich_text?.[0]?.plain_text || '';
