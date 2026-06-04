@@ -431,6 +431,26 @@ const DEFAULT_CATS      = ['システム開発・改善','インフラ・シス�
 const DEFAULT_COMPANIES = ['オオノ開發','千照運輸','トーヨー砕石','日景生コン','媛彦温泉','松山バーク','四國生コン','マテラ','オオノハク','ゴルフクラブそう','GoMax244','オオノアソシエーツ','みんなの健康','JOH'];
 const COLORS = ['c0','c1','c2','c3','c4','c5'];
 
+// 大分類キーワード辞書（上から順に優先度が高い）
+const CAT_KEYWORDS = {
+  '障害対応':             ['障害', '不具合', '復旧', 'トラブル', 'エラー対応', '異常'],
+  'ヘルプデスク対応':      ['問い合わせ', 'ヘルプデスク', '操作説明', 'アカウント対応', 'サポート依頼'],
+  'セキュリティ対応':      ['セキュリティ', 'パッチ', 'ウイルス', '権限管理', '監査'],
+  'システム開発・改善':    ['開発', '実装', '改修', 'テスト', '業務改善', 'RPA', '要件整理', 'プログラム'],
+  'インフラ・システム運用': ['サーバー', 'ネットワーク', 'クラウド', 'バックアップ', 'インフラ', '保守点検'],
+  'ＩＴ資産管理':         ['キッティング', '機器管理', 'ライセンス', 'PC設定', 'スマホ設定', '資産管理'],
+  '会議・打合せ':          ['会議', '打合せ', '打ち合わせ', '朝礼', 'MTG', 'ミーティング', '議事'],
+  '資料作成・教育':        ['マニュアル', '報告書', '資料作成', '教育', '研修', 'ドキュメント'],
+  '庶務・雑務':           ['掃除', '蛍光灯', '備品', '庶務', '雑務'],
+};
+
+function autoClassify(content) {
+  for (const [cat, keywords] of Object.entries(CAT_KEYWORDS)) {
+    if (keywords.some(kw => content.includes(kw))) return cat;
+  }
+  return 'その他';
+}
+
 // ── State ─────────────────────────────────────────────────────────────
 let cats, companies;
 const _defVer = parseInt(localStorage.getItem('work_defaults_version') || '0');
@@ -721,15 +741,20 @@ function calcDuration() {
 
 // ── ログ追加・削除 ────────────────────────────────────────────────────
 async function addLog() {
-  const cat     = document.getElementById('category').value;
+  const rawCat  = document.getElementById('category').value;
   const start   = document.getElementById('startTime').value;
   const end     = document.getElementById('endTime').value;
   const content = document.getElementById('content').value.trim();
   const selComp = getSelectedCompanies();
 
-  if (!cat || !start || !end || !content) {
-    alert('大分類・開始時間・終了時間・作業内容を入力してください');
+  if (!start || !end || !content) {
+    alert('開始時間・終了時間・作業内容を入力してください');
     return;
+  }
+
+  let cat = rawCat && rawCat !== 'その他' ? rawCat : autoClassify(content);
+  if (!rawCat || rawCat === 'その他') {
+    showToast(`大分類を自動設定：${cat}`);
   }
   const s = timeToMin(start), e = timeToMin(end);
   if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
@@ -855,16 +880,21 @@ async function saveEdit() {
   const log = logs.find(l => l.id === editingLogId);
   if (!log) { cancelEdit(); return; }
 
-  const cat     = document.getElementById('category').value;
+  const rawCat  = document.getElementById('category').value;
   const date    = document.getElementById('editDate').value || log.date;
   const start   = document.getElementById('startTime').value;
   const end     = document.getElementById('endTime').value;
   const content = document.getElementById('content').value.trim();
   const selComp = getSelectedCompanies();
 
-  if (!cat || !start || !end || !content) {
-    alert('大分類・開始時間・終了時間・作業内容を入力してください');
+  if (!start || !end || !content) {
+    alert('開始時間・終了時間・作業内容を入力してください');
     return;
+  }
+
+  let cat = rawCat && rawCat !== 'その他' ? rawCat : autoClassify(content);
+  if (!rawCat || rawCat === 'その他') {
+    showToast(`大分類を自動設定：${cat}`);
   }
   const s = timeToMin(start), e = timeToMin(end);
   if (e <= s) { alert('終了時間は開始より後にしてください'); return; }
