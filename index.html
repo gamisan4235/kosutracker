@@ -241,6 +241,7 @@
 <div class="header">
   <h1>工数管理</h1>
   <div class="date-badge" id="todayLabel"></div>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:4px;margin-left:auto;" id="versionBadge"></div>
 </div>
 
 <div class="layout">
@@ -482,6 +483,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── アプリバージョン ──────────────────────────────────────────────────
+// X.Y.Z：X=大幅変更 / Y=機能追加 / Z=軽微修正
+const APP_VERSION = '3.0.0';
+document.getElementById('versionBadge').textContent = `v${APP_VERSION}`;
+
 // ── デフォルト値 ──────────────────────────────────────────────────────
 // 項目を固定したいタイミングで DEFAULT_CATS / DEFAULT_COMPANIES を更新し
 // DEFAULT_VERSION を +1 してプッシュすると、全端末に新しいデフォルトが適用される
