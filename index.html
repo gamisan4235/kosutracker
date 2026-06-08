@@ -375,18 +375,17 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div class="form-group">
-          <label>優先度（日付）</label>
-          <input type="date" id="todoPriority">
+          <label>優先度</label>
+          <select id="todoPriority">
+            <option value="">未設定</option>
+            <option value="高">高</option>
+            <option value="中">中</option>
+            <option value="低">低</option>
+          </select>
         </div>
         <div class="form-group">
           <label>期限</label>
-          <select id="todoDeadline">
-            <option value="">未設定</option>
-            <option value="今日">今日</option>
-            <option value="今週">今週</option>
-            <option value="来週">来週</option>
-            <option value="今月">今月</option>
-          </select>
+          <input type="date" id="todoDeadline">
         </div>
       </div>
       <div class="form-group" style="margin-bottom:10px;">
@@ -485,7 +484,7 @@
 <script>
 // ── アプリバージョン ──────────────────────────────────────────────────
 // X.Y.Z：X=大幅変更 / Y=機能追加 / Z=軽微修正
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.0.1';
 document.getElementById('versionBadge').textContent = `v${APP_VERSION}`;
 
 // ── デフォルト値 ──────────────────────────────────────────────────────
@@ -1544,8 +1543,8 @@ function buildTodoNotionPayload(todo, dbId) {
     "備考":       { rich_text: [{ text: { content: todo.notes || '' } }] },
     "最終更新日": { date:      { start: todo.updatedAt || getTodayStr() } }
   };
-  if (todo.priority)    props["優先度"]  = { date: { start: todo.priority } };
-  if (todo.deadline)    props["期限"]    = { select: { name: todo.deadline } };
+  if (todo.priority)    props["優先度"]  = { select: { name: todo.priority } };
+  if (todo.deadline)    props["期限"]    = { date: { start: todo.deadline } };
   if (todo.completedAt) props["完了日"]  = { date: { start: todo.completedAt } };
   return { parent: { database_id: formatDbId(dbId) }, properties: props };
 }
