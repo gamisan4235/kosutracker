@@ -186,9 +186,10 @@
       row-gap:12px;
     }
     .area-right { gap:12px; }
-    .area-summary { order:1; }
-    .area-report  { order:2; }
-    .area-notion  { order:3; }
+    .area-todo    { order:1; }
+    .area-summary { order:2; }
+    .area-report  { order:3; }
+    .area-notion  { order:4; }
     .card { padding:14px; }
     /* 時間入力を2列に折り返す */
     .time-row { grid-template-columns:1fr auto; }
@@ -210,6 +211,21 @@
   .modal-log-item:last-child { border-bottom:none; }
   .modal-check-row { display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none; }
   .modal-btns { display:flex;gap:8px; }
+
+  /* Todo */
+  .todo-item { padding:10px 0; border-bottom:1px solid rgba(46,51,80,0.5); }
+  .todo-item:last-child { border-bottom:none; }
+  .todo-item.done .todo-task { text-decoration:line-through; color:var(--text2); }
+  .todo-row1 { display:flex; align-items:center; gap:8px; }
+  .todo-row2,.todo-row3 { display:flex; align-items:center; gap:8px; margin-top:4px; padding-left:24px; flex-wrap:wrap; min-height:16px; }
+  .todo-check { width:16px; height:16px; accent-color:var(--accent2); cursor:pointer; flex-shrink:0; }
+  .todo-task { flex:1; font-size:13px; word-break:break-all; }
+  .todo-priority { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--warn); white-space:nowrap; }
+  .todo-tag { font-size:11px; padding:1px 8px; border-radius:4px; background:var(--surface2); border:1px solid var(--border); color:var(--text2); white-space:nowrap; }
+  .todo-notes-text { font-size:11px; color:var(--text2); }
+  .todo-completed { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent2); }
+  .todo-updated { font-size:11px; color:var(--text2); }
+  .todo-add-form { border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface2); margin-bottom:12px; }
 
   /* Color classes */
   .c0{background:#4f7cff}.c0t{color:#4f7cff;background:rgba(79,124,255,0.12)}
@@ -345,6 +361,45 @@
   <!-- 右列（サマリー・Notion設定・日報） -->
   <div class="area-right">
 
+  <!-- Todo -->
+  <div class="card area-todo">
+    <div class="card-title">
+      <span>TODO</span>
+      <button class="btn-sm" onclick="toggleTodoForm()">＋ 追加</button>
+    </div>
+    <div class="todo-add-form" id="todoAddForm" style="display:none;">
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>タスク名 *</label>
+        <input type="text" id="todoTask" placeholder="タスクを入力" onkeydown="if(event.key==='Enter')addTodo()">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div class="form-group">
+          <label>優先度（日付）</label>
+          <input type="date" id="todoPriority">
+        </div>
+        <div class="form-group">
+          <label>期限</label>
+          <select id="todoDeadline">
+            <option value="">未設定</option>
+            <option value="今日">今日</option>
+            <option value="今週">今週</option>
+            <option value="来週">来週</option>
+            <option value="今月">今月</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>備考</label>
+        <input type="text" id="todoNotes" placeholder="備考">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="addTodo()" style="flex:1;">追加</button>
+        <button class="btn" onclick="toggleTodoForm()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:11px 16px;">キャンセル</button>
+      </div>
+    </div>
+    <div id="todoList"><div class="empty-state">Todoがありません</div></div>
+  </div>
+
   <!-- 今日のサマリー -->
   <div class="card area-summary">
       <div class="card-title">今日のサマリー</div>
@@ -386,6 +441,10 @@
           <label>工数ログDB の Database ID</label>
           <input type="text" id="notionDbId" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveSettings()">
           <div class="help-text">DBページURL: notion.so/xxxxx?v=... の xxxxx 部分（32文字）</div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>TodoログDB の Database ID</label>
+          <input type="text" id="notionTodoDbId" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" oninput="saveSettings()">
         </div>
         <button class="btn-notion" onclick="testConnection()">接続テスト</button>
         <div class="notion-status" id="notionStatus"></div>
@@ -465,6 +524,7 @@ if (_defVer < DEFAULT_VERSION) {
   companies = JSON.parse(localStorage.getItem('work_companies')) || DEFAULT_COMPANIES.slice();
 }
 let logs      = JSON.parse(localStorage.getItem('work_logs'))      || [];
+let todos     = JSON.parse(localStorage.getItem('todo_logs'))      || [];
 let recordingState  = null; // null | 'started'
 let editingCatIdx   = null;
 let editingCompIdx  = null;
@@ -1068,20 +1128,24 @@ function copyReport() {
 
 // ── Notion設定 ────────────────────────────────────────────────────────
 function loadSettings() {
-  const token = localStorage.getItem('notion_token') || '';
-  const dbId  = localStorage.getItem('notion_db_id') || '';
-  document.getElementById('notionToken').value = token;
-  document.getElementById('notionDbId').value  = dbId;
+  const token      = localStorage.getItem('notion_token')      || '';
+  const dbId       = localStorage.getItem('notion_db_id')      || '';
+  const todoDbId   = localStorage.getItem('notion_todo_db_id') || '';
+  document.getElementById('notionToken').value     = token;
+  document.getElementById('notionDbId').value      = dbId;
+  document.getElementById('notionTodoDbId').value  = todoDbId;
   if (token && dbId) {
     document.getElementById('notionConnectedBadge').style.display = 'inline';
   }
 }
 
 function saveSettings() {
-  const token = document.getElementById('notionToken').value.trim();
-  const dbId  = document.getElementById('notionDbId').value.trim();
-  localStorage.setItem('notion_token', token);
-  localStorage.setItem('notion_db_id', dbId);
+  const token    = document.getElementById('notionToken').value.trim();
+  const dbId     = document.getElementById('notionDbId').value.trim();
+  const todoDbId = document.getElementById('notionTodoDbId').value.trim();
+  localStorage.setItem('notion_token',      token);
+  localStorage.setItem('notion_db_id',      dbId);
+  localStorage.setItem('notion_todo_db_id', todoDbId);
   document.getElementById('notionConnectedBadge').style.display = (token && dbId) ? 'inline' : 'none';
   render();
 }
@@ -1344,11 +1408,168 @@ function cancelCleanup() {
   document.getElementById('cleanupModal').style.display = 'none';
 }
 
+// ── Todo管理 ──────────────────────────────────────────────────────────
+function saveTodos() {
+  localStorage.setItem('todo_logs', JSON.stringify(todos));
+}
+
+function renderTodos() {
+  const list = document.getElementById('todoList');
+  if (!list) return;
+  if (todos.length === 0) {
+    list.innerHTML = '<div class="empty-state">Todoがありません</div>';
+    return;
+  }
+  const sorted = [...todos].sort((a, b) => {
+    if (a.checked !== b.checked) return a.checked ? 1 : -1;
+    if (a.priority && b.priority) return a.priority.localeCompare(b.priority);
+    if (a.priority && !b.priority) return -1;
+    if (!a.priority && b.priority) return 1;
+    return b.id - a.id;
+  });
+  list.innerHTML = sorted.map(t => {
+    const nm = t.notionSent
+      ? `<span class="notion-log-status sent" title="Notion送信済">✓</span>`
+      : t.notionError
+        ? `<span class="notion-log-status notion-err" title="${escHtml(t.notionError)}">!</span>`
+        : `<span class="notion-log-status unsent" title="未送信">−</span>`;
+    return `<div class="todo-item${t.checked ? ' done' : ''}">
+      <div class="todo-row1">
+        <input type="checkbox" class="todo-check" ${t.checked ? 'checked' : ''} onchange="toggleTodo(${t.id})">
+        ${t.priority ? `<span class="todo-priority">${escHtml(t.priority)}</span>` : '<span style="width:72px"></span>'}
+        <span class="todo-task">${escHtml(t.task)}</span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:2px;">${nm}<button class="btn-icon danger" onclick="deleteTodo(${t.id})" title="削除">✕</button></span>
+      </div>
+      <div class="todo-row2">
+        ${t.deadline ? `<span class="todo-tag">${escHtml(t.deadline)}</span>` : ''}
+        ${t.notes    ? `<span class="todo-notes-text">${escHtml(t.notes)}</span>` : ''}
+      </div>
+      <div class="todo-row3">
+        ${t.completedAt ? `<span class="todo-completed">完了: ${escHtml(t.completedAt)}</span>` : ''}
+        ${t.updatedAt   ? `<span class="todo-updated">更新: ${escHtml(t.updatedAt)}</span>`   : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTodoForm() {
+  const form = document.getElementById('todoAddForm');
+  const open = form.style.display === 'none' || !form.style.display;
+  form.style.display = open ? 'block' : 'none';
+  if (open) document.getElementById('todoTask').focus();
+}
+
+async function addTodo() {
+  const task     = (document.getElementById('todoTask').value     || '').trim();
+  const priority = document.getElementById('todoPriority').value;
+  const deadline = document.getElementById('todoDeadline').value;
+  const notes    = (document.getElementById('todoNotes').value    || '').trim();
+  if (!task) { alert('タスク名を入力してください'); return; }
+
+  const todo = {
+    id: Date.now(), checked: false, priority, task, deadline, notes,
+    completedAt: null, updatedAt: getTodayStr(),
+    notionSent: false, notionId: null, notionError: null
+  };
+  todos.push(todo);
+  saveTodos();
+
+  document.getElementById('todoTask').value     = '';
+  document.getElementById('todoPriority').value = '';
+  document.getElementById('todoDeadline').value = '';
+  document.getElementById('todoNotes').value    = '';
+  document.getElementById('todoAddForm').style.display = 'none';
+  renderTodos();
+
+  const token    = localStorage.getItem('notion_token');
+  const todoDbId = localStorage.getItem('notion_todo_db_id');
+  if (token && todoDbId) {
+    showToast('TodoをNotionへ送信中…');
+    try {
+      const id = await sendTodoToNotion(todo, token, todoDbId);
+      todo.notionSent = true; todo.notionId = id; todo.notionError = null;
+      saveTodos(); renderTodos();
+      showToast('✓ TodoをNotionへ送信しました');
+    } catch(e) {
+      todo.notionError = e.message;
+      saveTodos(); renderTodos();
+      showToast('Notion送信に失敗しました', true);
+    }
+  }
+}
+
+async function toggleTodo(id) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+  todo.checked     = !todo.checked;
+  todo.completedAt = todo.checked ? getTodayStr() : null;
+  todo.updatedAt   = getTodayStr();
+  saveTodos(); renderTodos();
+
+  const token    = localStorage.getItem('notion_token');
+  const todoDbId = localStorage.getItem('notion_todo_db_id');
+  if (token && todoDbId) {
+    try {
+      if (todo.notionSent && todo.notionId) {
+        await updateTodoInNotion(todo, token, todo.notionId);
+      } else {
+        const nid = await sendTodoToNotion(todo, token, todoDbId);
+        todo.notionSent = true; todo.notionId = nid;
+      }
+      todo.notionError = null;
+    } catch(e) {
+      todo.notionError = e.message;
+      showToast('Notion更新に失敗しました', true);
+    }
+    saveTodos(); renderTodos();
+  }
+}
+
+function deleteTodo(id) {
+  if (!confirm('このTodoを削除しますか？')) return;
+  todos = todos.filter(t => t.id !== id);
+  saveTodos(); renderTodos();
+}
+
+function buildTodoNotionPayload(todo, dbId) {
+  const props = {
+    "タスク名":   { title:     [{ text: { content: todo.task } }] },
+    "チェック":   { checkbox:  todo.checked },
+    "備考":       { rich_text: [{ text: { content: todo.notes || '' } }] },
+    "最終更新日": { date:      { start: todo.updatedAt || getTodayStr() } }
+  };
+  if (todo.priority)    props["優先度"]  = { date: { start: todo.priority } };
+  if (todo.deadline)    props["期限"]    = { select: { name: todo.deadline } };
+  if (todo.completedAt) props["完了日"]  = { date: { start: todo.completedAt } };
+  return { parent: { database_id: formatDbId(dbId) }, properties: props };
+}
+
+async function sendTodoToNotion(todo, token, dbId) {
+  const res = await fetch('https://notion-proxy.itjyouhou.workers.dev/v1/pages', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildTodoNotionPayload(todo, dbId))
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(`${res.status}: ${e.message}`); }
+  return (await res.json()).id;
+}
+
+async function updateTodoInNotion(todo, token, pageId) {
+  const dbId = localStorage.getItem('notion_todo_db_id');
+  const res = await fetch(`https://notion-proxy.itjyouhou.workers.dev/v1/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ properties: buildTodoNotionPayload(todo, dbId).properties })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(`${res.status}: ${e.message}`); }
+}
+
 // ── 初期化 ────────────────────────────────────────────────────────────
 loadSettings();
 buildCatSelect();
 buildCompanyCheckboxes();
 render();
+renderTodos();
 checkDateChange();
 </script>
 </body>
