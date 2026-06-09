@@ -366,12 +366,16 @@
   <div class="card area-todo">
     <div class="card-title">
       <span>TODO</span>
-      <button class="btn-sm" onclick="toggleTodoForm()">＋ 追加</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-sm" id="btnShowDone" onclick="toggleShowDone()">完了済 (0)</button>
+        <button class="btn-sm" onclick="toggleTodoForm()">＋ 追加</button>
+      </div>
     </div>
     <div class="todo-add-form" id="todoAddForm" style="display:none;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text2);margin-bottom:8px;" id="todoFormTitle">タスクを追加</div>
       <div class="form-group" style="margin-bottom:8px;">
         <label>タスク名 *</label>
-        <input type="text" id="todoTask" placeholder="タスクを入力" onkeydown="if(event.key==='Enter')addTodo()">
+        <input type="text" id="todoTask" placeholder="タスクを入力">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div class="form-group">
@@ -393,8 +397,8 @@
         <input type="text" id="todoNotes" placeholder="備考">
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary" onclick="addTodo()" style="flex:1;">追加</button>
-        <button class="btn" onclick="toggleTodoForm()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:11px 16px;">キャンセル</button>
+        <button class="btn btn-primary" id="todoSubmitBtn" onclick="addTodo()" style="flex:1;">追加</button>
+        <button class="btn" onclick="cancelTodoForm()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:11px 16px;">キャンセル</button>
       </div>
     </div>
     <div id="todoList"><div class="empty-state">Todoがありません</div></div>
@@ -484,7 +488,7 @@
 <script>
 // ── アプリバージョン ──────────────────────────────────────────────────
 // X.Y.Z：X=大幅変更 / Y=機能追加 / Z=軽微修正
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.1.0';
 document.getElementById('versionBadge').textContent = `v${APP_VERSION}`;
 
 // ── デフォルト値 ──────────────────────────────────────────────────────
@@ -534,6 +538,8 @@ let recordingState  = null; // null | 'started'
 let editingCatIdx   = null;
 let editingCompIdx  = null;
 let editingLogId    = null;
+let editingTodoId   = null;
+let showDoneTodos   = false;
 
 // 旧バージョンのログデータに不足フィールドを補完
 logs.forEach((l, i) => {
@@ -1421,17 +1427,32 @@ function saveTodos() {
 function renderTodos() {
   const list = document.getElementById('todoList');
   if (!list) return;
-  if (todos.length === 0) {
-    list.innerHTML = '<div class="empty-state">Todoがありません</div>';
+
+  const doneCnt = todos.filter(t => t.checked).length;
+  const doneBtn = document.getElementById('btnShowDone');
+  if (doneBtn) {
+    doneBtn.textContent = `完了済 (${doneCnt})`;
+    doneBtn.style.borderColor = showDoneTodos ? 'var(--accent2)' : '';
+    doneBtn.style.color       = showDoneTodos ? 'var(--accent2)' : '';
+  }
+
+  const visible = showDoneTodos ? todos : todos.filter(t => !t.checked);
+
+  if (visible.length === 0) {
+    list.innerHTML = (doneCnt > 0 && !showDoneTodos)
+      ? '<div class="empty-state">未完了のTodoはありません</div>'
+      : '<div class="empty-state">Todoがありません</div>';
     return;
   }
-  const sorted = [...todos].sort((a, b) => {
+
+  const sorted = [...visible].sort((a, b) => {
     if (a.checked !== b.checked) return a.checked ? 1 : -1;
     if (a.priority && b.priority) return a.priority.localeCompare(b.priority);
     if (a.priority && !b.priority) return -1;
     if (!a.priority && b.priority) return 1;
     return b.id - a.id;
   });
+
   list.innerHTML = sorted.map(t => {
     const nm = t.notionSent
       ? `<span class="notion-log-status sent" title="Notion送信済">✓</span>`
@@ -1443,7 +1464,7 @@ function renderTodos() {
         <input type="checkbox" class="todo-check" ${t.checked ? 'checked' : ''} onchange="toggleTodo(${t.id})">
         ${t.priority ? `<span class="todo-priority">${escHtml(t.priority)}</span>` : '<span style="width:72px"></span>'}
         <span class="todo-task">${escHtml(t.task)}</span>
-        <span style="margin-left:auto;display:flex;align-items:center;gap:2px;">${nm}<button class="btn-icon danger" onclick="deleteTodo(${t.id})" title="削除">✕</button></span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:2px;">${nm}<button class="btn-icon" onclick="editTodo(${t.id})" title="編集">✎</button><button class="btn-icon danger" onclick="deleteTodo(${t.id})" title="削除">✕</button></span>
       </div>
       <div class="todo-row2">
         ${t.deadline ? `<span class="todo-tag">${escHtml(t.deadline)}</span>` : ''}
@@ -1458,10 +1479,96 @@ function renderTodos() {
 }
 
 function toggleTodoForm() {
-  const form = document.getElementById('todoAddForm');
-  const open = form.style.display === 'none' || !form.style.display;
-  form.style.display = open ? 'block' : 'none';
-  if (open) document.getElementById('todoTask').focus();
+  const form   = document.getElementById('todoAddForm');
+  const isOpen = form.style.display === 'block';
+  if (isOpen) {
+    cancelTodoForm();
+  } else {
+    editingTodoId = null;
+    document.getElementById('todoFormTitle').textContent = 'タスクを追加';
+    const btn = document.getElementById('todoSubmitBtn');
+    btn.textContent = '追加';
+    btn.onclick     = addTodo;
+    form.style.display = 'block';
+    document.getElementById('todoTask').focus();
+  }
+}
+
+function cancelTodoForm() {
+  editingTodoId = null;
+  document.getElementById('todoTask').value     = '';
+  document.getElementById('todoPriority').value = '';
+  document.getElementById('todoDeadline').value = '';
+  document.getElementById('todoNotes').value    = '';
+  document.getElementById('todoFormTitle').textContent = 'タスクを追加';
+  const btn = document.getElementById('todoSubmitBtn');
+  btn.textContent = '追加';
+  btn.onclick     = addTodo;
+  document.getElementById('todoAddForm').style.display = 'none';
+}
+
+function editTodo(id) {
+  const todo = todos.find(t => t.id === id);
+  if (!todo) return;
+  editingTodoId = id;
+  document.getElementById('todoTask').value     = todo.task;
+  document.getElementById('todoPriority').value = todo.priority || '';
+  document.getElementById('todoDeadline').value = todo.deadline || '';
+  document.getElementById('todoNotes').value    = todo.notes    || '';
+  document.getElementById('todoFormTitle').textContent = 'タスクを編集';
+  const btn = document.getElementById('todoSubmitBtn');
+  btn.textContent = '✓ 保存';
+  btn.onclick     = saveTodoEdit;
+  document.getElementById('todoAddForm').style.display = 'block';
+  document.getElementById('todoTask').focus();
+}
+
+async function saveTodoEdit() {
+  const todo = todos.find(t => t.id === editingTodoId);
+  if (!todo) { cancelTodoForm(); return; }
+  const task     = (document.getElementById('todoTask').value || '').trim();
+  const priority = document.getElementById('todoPriority').value;
+  const deadline = document.getElementById('todoDeadline').value;
+  const notes    = (document.getElementById('todoNotes').value || '').trim();
+  if (!task) { alert('タスク名を入力してください'); return; }
+  const wasNotionSent = todo.notionSent;
+  const prevNotionId  = todo.notionId;
+  todo.task      = task;
+  todo.priority  = priority;
+  todo.deadline  = deadline;
+  todo.notes     = notes;
+  todo.updatedAt = getTodayStr();
+  saveTodos();
+  cancelTodoForm();
+  renderTodos();
+  const token    = localStorage.getItem('notion_token');
+  const todoDbId = localStorage.getItem('notion_todo_db_id');
+  if (token && todoDbId) {
+    try {
+      if (wasNotionSent && prevNotionId) {
+        showToast('TodoをNotionで更新中…');
+        await updateTodoInNotion(todo, token, prevNotionId);
+        todo.notionError = null;
+        saveTodos(); renderTodos();
+        showToast('✓ TodoをNotionで更新しました');
+      } else {
+        showToast('TodoをNotionへ送信中…');
+        const id = await sendTodoToNotion(todo, token, todoDbId);
+        todo.notionSent = true; todo.notionId = id; todo.notionError = null;
+        saveTodos(); renderTodos();
+        showToast('✓ TodoをNotionへ送信しました');
+      }
+    } catch(e) {
+      todo.notionError = e.message;
+      saveTodos(); renderTodos();
+      showToast('Notion更新に失敗しました', true);
+    }
+  }
+}
+
+function toggleShowDone() {
+  showDoneTodos = !showDoneTodos;
+  renderTodos();
 }
 
 async function addTodo() {
@@ -1478,12 +1585,7 @@ async function addTodo() {
   };
   todos.push(todo);
   saveTodos();
-
-  document.getElementById('todoTask').value     = '';
-  document.getElementById('todoPriority').value = '';
-  document.getElementById('todoDeadline').value = '';
-  document.getElementById('todoNotes').value    = '';
-  document.getElementById('todoAddForm').style.display = 'none';
+  cancelTodoForm();
   renderTodos();
 
   const token    = localStorage.getItem('notion_token');
