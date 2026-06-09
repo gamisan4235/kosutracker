@@ -1,0 +1,9 @@
+# Claude Code instructions (local only, do not push)
+CLAUDE.md
+
+# Local memo files
+memo.txt
+大項目説明.txt
+
+# Claude Code session data
+.claude/
